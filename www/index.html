@@ -1,0 +1,28 @@
+<html>
+
+<head>
+  <title>Zig Zac Zoe</title>
+
+  <script src="https://unpkg.com/htmx.org@1.9.2"
+    integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
+    crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;400&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+  <div hx-ext="sse" sse-connect="/game" sse-swap="clock">
+    Contents of this box will be updated in real time
+    with every SSE message received from the chatroom.
+  </div>
+  <div id="game">
+    Game contents go in here
+  </div>
+</body>
+
+</html>
