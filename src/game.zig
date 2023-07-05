@@ -24,11 +24,3 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8) !Self {
         .players = players,
     };
 }
-
-// Add handlers for :
-// - GET
-// - POST login (player_id)
-// - PUT piece (player_id, x, y)
-// - GET event clock
-// - GET event next_move
-// - POST new_game
