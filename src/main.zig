@@ -22,6 +22,7 @@ pub fn main() !void {
 
     var router = server.router();
     router.get("/", indexHTML);
+    router.get("/game", Game.eventLoop);
 
     return server.listen();
 }

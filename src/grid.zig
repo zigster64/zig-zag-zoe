@@ -1,8 +1,7 @@
 const std = @import("std");
+const Errors = @import("errors.zig");
 
 const Self = @This();
-
-const GridError = error{GridTooBig};
 
 // Game thread control
 game_mutex: std.Thread.Mutex = .{},
@@ -14,9 +13,9 @@ grid_x: u8 = 1,
 grid_y: u8 = 1,
 grid_buffer: [144]u8 = undefined,
 
-pub fn init(grid_x: u8, grid_y: u8) GridError!Self {
+pub fn init(grid_x: u8, grid_y: u8) Errors.GameError!Self {
     if (grid_x * grid_y > 144) {
-        return GridError.GridTooBig;
+        return Errors.GameError.GridTooBig;
     }
 
     return Self{

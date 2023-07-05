@@ -16,9 +16,11 @@
 </head>
 
 <body>
-  <div hx-ext="sse" sse-connect="/game" sse-swap="clock">
-    Contents of this box will be updated in real time
-    with every SSE message received from the chatroom.
+  <div class=>Elapsed Time:
+    <span class="clock" hx-ext="sse" sse-connect="/game" sse-swap="clock">
+      .. time here ..
+    </span>
+    Seconds
   </div>
   <div id="game">
     Game contents go in here
