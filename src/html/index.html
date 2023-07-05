@@ -15,15 +15,10 @@
 
 </head>
 
-<body>
-  <div class=>Elapsed Time:
-    <span class="clock" hx-ext="sse" sse-connect="/game" sse-swap="clock">
-      .. time here ..
-    </span>
-    Seconds
-  </div>
-  <div id="game">
-    Game contents go in here
+<body hx-ext="sse" sse-connect="/events">
+  <div class="header" id="header" hx-get="/header" hx-trigger="load"></div>
+  <div id="game" hx-get="/page" hx-trigger="load">
+    .. Game contents go in here ..
   </div>
 </body>
 

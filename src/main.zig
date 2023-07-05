@@ -18,27 +18,42 @@ pub fn main() !void {
     var game = try Game.init(grid_x, grid_y, players);
 
     var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{ .port = 3000 }, &game);
-    server.notFound(fileServer);
+    // server.notFound(fileServer);
+    server.notFound(notFound);
 
     var router = server.router();
     router.get("/", indexHTML);
-    router.get("/game", Game.eventLoop);
+    router.get("/index.html", indexHTML);
+    router.get("/styles.css", stylesCSS);
+    router.get("/events", Game.events);
+    router.get("/page", Game.page);
+    router.get("/header", Game.header);
 
     return server.listen();
 }
 
-fn fileServer(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+fn notFound(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = req;
     _ = ctx;
-    return serveFile(res, req.url.path);
+    res.status = 404;
+    res.body = "File not found";
 }
 
 fn indexHTML(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
     _ = req;
     _ = ctx;
-    return serveFile(res, "/index.html");
+    res.body = @embedFile("html/index.html");
 }
 
-fn serveFile(res: *httpz.Response, path: []const u8) !void {
+fn stylesCSS(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = req;
+    _ = ctx;
+    res.body = @embedFile("html/styles.css");
+}
+
+fn fileServer(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = ctx;
+    const path = req.url.path;
     std.debug.print("GET {s}\n", .{path});
 
     var new_path = try std.mem.concat(res.arena, u8, &[_][]const u8{ www_path, path });

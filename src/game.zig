@@ -5,6 +5,14 @@ const Errors = @import("errors.zig");
 
 const Self = @This();
 
+const State = enum {
+    init,
+    logins,
+    running,
+    victory,
+    stalemate,
+};
+
 // Game thread control
 game_mutex: std.Thread.Mutex = .{},
 event_mutex: std.Thread.Mutex = .{},
@@ -17,6 +25,7 @@ players: u8 = 2,
 grid: Grid = undefined,
 logged_in: [8]bool = undefined,
 clocks: [8]i64 = undefined,
+state: State = .init,
 
 start_time: i64 = undefined,
 
@@ -43,7 +52,30 @@ fn clock(self: *Self, stream: std.net.Stream) !void {
     try stream.writer().print("data: {d}\n\n", .{std.time.timestamp() - self.start_time});
 }
 
-pub fn eventLoop(self: *Self, _req: *httpz.Request, res: *httpz.Response) !void {
+pub fn header(self: *Self, _req: *httpz.Request, res: *httpz.Response) !void {
+    std.log.info("GET /header {}", .{self.state});
+    _ = _req;
+    switch (self.state) {
+        .init => {
+            res.body = "Setup New Game";
+        },
+        .logins => {
+            res.body = "Waiting for Logins";
+        },
+        .running => {
+            res.body = @embedFile("html/clock.html");
+        },
+        .victory => {
+            res.body = @embedFile("html/victory.html");
+        },
+        .stalemate => {
+            res.body = @embedFile("html/stalemate.html");
+        },
+    }
+}
+
+pub fn events(self: *Self, _req: *httpz.Request, res: *httpz.Response) !void {
+    std.log.info("(event-source) GET /events {}", .{self.state});
     _ = _req;
     const clock_interval = std.time.ns_per_s * 1;
 
@@ -69,4 +101,14 @@ pub fn eventLoop(self: *Self, _req: *httpz.Request, res: *httpz.Response) !void 
 
         // if we get here, it means that the event_condition was signalled, so we can send the updated document now
     }
+}
+
+pub fn page(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = req;
+    std.log.info("GET /page {}", .{self.state});
+
+    const w = res.writer();
+    self.game_mutex.lock();
+    defer self.game_mutex.unlock();
+    try w.print("The page data goes in here", .{});
 }
