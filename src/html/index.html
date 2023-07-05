@@ -17,7 +17,10 @@
 
 <body hx-ext="sse" sse-connect="/events">
   <div class="header" id="header" hx-get="/header" hx-trigger="load"></div>
-  <div id="game" hx-get="/page" hx-trigger="load">
+  <div id="last-update" hx-swap="update">
+    .. last update ..
+  </div>
+  <div id="game" hx-get="/app" hx-trigger="load sse:update">
     .. Game contents go in here ..
   </div>
 </body>

@@ -26,8 +26,9 @@ pub fn main() !void {
     router.get("/index.html", indexHTML);
     router.get("/styles.css", stylesCSS);
     router.get("/events", Game.events);
-    router.get("/page", Game.page);
+    router.get("/app", Game.app);
     router.get("/header", Game.header);
+    router.post("/setup", Game.setup);
 
     return server.listen();
 }

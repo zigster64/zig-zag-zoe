@@ -16,17 +16,17 @@ body {
 
 .header {
   color: lightblue;
-  font-size: 24px;
+  font-size: 48px;
 }
 
 .victory {
   color: lightgreen;
-  font-size: 24px;
+  font-size: 48px;
 }
 
 .stalemate {
   color: orange;
-  font-size: 24px;
+  font-size: 48px;
 }
 
 .grid-container {
