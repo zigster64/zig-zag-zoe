@@ -20,6 +20,7 @@ pub fn main() !void {
     var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{ .port = 3000 }, &game);
     // server.notFound(fileServer);
     server.notFound(notFound);
+    server.errorHandler(errorHandler);
 
     var router = server.router();
     router.get("/", indexHTML);
@@ -29,8 +30,17 @@ pub fn main() !void {
     router.get("/app", Game.app);
     router.get("/header", Game.header);
     router.post("/setup", Game.setup);
+    router.post("/login/:player", Game.login);
 
     return server.listen();
+}
+
+// note that the error handler return `void` and not `!void`
+fn errorHandler(ctx: *Game, req: *httpz.Request, res: *httpz.Response, err: anyerror) void {
+    _ = ctx;
+    res.status = 500;
+    res.body = "Error";
+    std.log.warn("Error {} on request {s}", .{ err, req.url.raw });
 }
 
 fn notFound(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {

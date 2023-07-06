@@ -19,6 +19,10 @@ body {
   font-size: 48px;
 }
 
+.hidden {
+  opacity: 0;
+}
+
 .victory {
   color: lightgreen;
   font-size: 48px;
