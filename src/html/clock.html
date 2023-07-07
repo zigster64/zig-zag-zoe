@@ -1,5 +1,5 @@
-<div>Elapsed Time:
-  <span class="clock" hx-trigger="sse:clock">
+<div>Running Time:
+  <span class="clock" hx-ext="sse" sse-connect="/events" sse-swap="clock">
     .. time goes in here ..
   </span>
   Seconds

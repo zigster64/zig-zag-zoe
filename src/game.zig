@@ -185,7 +185,22 @@ pub fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     self.clocks[player - 1] = std.time.timestamp();
     std.log.info("Player {} now logged in", .{player});
     try res.writer().print("{}", .{player});
-    self.signal(.login);
+
+    // if everyone is logged in, then proceed to the .running state, and signal .start
+    // othervise, signal that a login happened, but we are still waiting for everyone to join
+    var all_done = true;
+    for (0..self.players) |i| {
+        if (!self.logged_in[i]) {
+            all_done = false;
+            break;
+        }
+    }
+    if (all_done) {
+        self.state = .running;
+        self.signal(.start);
+    } else {
+        self.signal(.login);
+    }
 }
 
 /// setup() POST requ sets up a new game, with specified grid size and number of players

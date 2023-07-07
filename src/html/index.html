@@ -28,12 +28,11 @@
 
   <script>
     function getPlayer() {
-      let p = parseInt(document.getElementById("player").innerText);
+      const p = parseInt(document.getElementById("player").innerText);
       return isNaN(p) ? 0 : p;
     }
 
     function setPlayer(p) {
-      console.log("setting player", p);
       document.getElementById("player").innerText = p;
     }
   </script>
