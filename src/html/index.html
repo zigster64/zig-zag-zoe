@@ -38,6 +38,7 @@
         }
 
         function setGridColumns(numColumns) {
+            console.log("setting grid columns to", numColumns);
             var gridContainer = document.querySelector('.grid-container');
             gridContainer.style.gridTemplateColumns = `repeat(${numColumns}, minmax(50px, 1fr))`;
         }

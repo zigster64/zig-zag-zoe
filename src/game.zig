@@ -72,6 +72,7 @@ pub fn addRoutes(self: *Self, router: anytype) void {
     router.post("/setup", Self.setup); // Process the setup for a new game
     router.post("/login/:player", Self.login); // login !
     router.post("/square/:x/:y", Self.square); // player clicks on a square
+    router.post("/restart", Self.restart);
 }
 
 /// signal() function transitions the game state to the new state, and signals the event handlers to update
@@ -81,6 +82,15 @@ fn signal(self: *Self, ev: Event) void {
     self.last_event = ev;
     self.event_condition.broadcast();
     std.log.info("signal event {}", .{ev});
+}
+
+fn restart(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = req;
+    self.game_mutex.lock();
+    defer self.game_mutex.unlock();
+    res.body = "restarted";
+    self.state = .init;
+    self.signal(.init);
 }
 
 // clock() function returns a fragment with the current clock value
@@ -100,7 +110,7 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     defer self.game_mutex.unlock();
     switch (self.state) {
         .init => {
-            res.body = "Setup New Game";
+            res.body = "Setup New Game <script>setPlayer(0)</script>";
         },
         .login => {
             res.body = "Waiting for Logins";
@@ -111,7 +121,6 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
                 \\ <div>Player {}'s turn</div>
                 \\ <div>Clock:
                 \\ <span class="clock" hx-ext="sse" sse-connect="/events" sse-swap="clock">
-                \\ .. time goes in here ..
                 \\ </span>
                 \\ Seconds
                 \\ </div>
@@ -155,7 +164,7 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
             try self.showBoard(0, res);
             const w = res.writer();
             try w.writeAll(
-                \\ <input type=submit hx-post="/restart">Restart with New Game</input>
+                \\ <input type="button" hx-post="/restart" onclick="setPlayer(0)" value="Restart with New Game" class="red-button">
             );
         },
         .stalemate => {
@@ -168,14 +177,19 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     const w = res.writer();
 
     if (player == self.current_player) {
-        try w.print(
-            \\ <div onload="setGridColumns({})" class="grid-container-active">
-        , .{self.grid_y});
+        try w.writeAll(
+            \\ <div class="active-player">
+        );
     } else {
-        try w.print(
-            \\ <div onload="setGridColumns({})" class="grid-container">
-        , .{self.grid_y});
+        try w.writeAll(
+            \\ <div class="inactive-player">
+        );
     }
+
+    try w.print(
+        \\ <script>setGridColumns({});</script>
+        \\ <div class="grid-container">
+    , .{self.grid_x});
 
     for (0..self.grid_y) |y| {
         for (0..self.grid_x) |x| {
@@ -214,6 +228,7 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     }
 
     try w.writeAll(
+        \\ </div>
         \\ </div>
     );
 
@@ -323,6 +338,7 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         res.body = "Invalid Y Value";
         return;
     }
+    std.log.info("board.put {},{} = {}", .{ x, y, player });
     try self.board.put(x - 1, y - 1, player);
 
     if (self.board.victory(self.current_player, self.needed_to_win)) {
@@ -368,7 +384,7 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         if (setup_request.players > MAX_PLAYERS) {
             return Errors.GameError.TooManyPlayers;
         }
-        if (setup_request.x < 2 or setup_request.x > 12) {
+        if (setup_request.x < 2 or setup_request.x > 15) {
             return Errors.GameError.InvalidSetup;
         }
         if (setup_request.y < 2 or setup_request.y > 12) {
