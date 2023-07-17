@@ -1,15 +1,31 @@
 <form hx-post="/setup" hx-ext="json-enc">
-  <div>
-    <label>Grid X</label>
-    <input type="number" name="x" value="3">
-  </div>
-  <div>
-    <label>Grid Y</label>
-    <input type="number" name="y" value="3">
-  </div>
-  <div>
-    <label>Number of Players</label>
-    <input type="number" name="players" value="2">
-  </div>
-  <button class="btn">Start</button>
+    <div>
+        <input type="range" id="x" name="x" value="3" min="2" max="15" onchange="updateValue('x-value',this.value)">
+        <span id="x-value">3</span>
+        <label for="x">Columns</label>
+    </div>
+    <div>
+        <input type="range" id="y" name="y" value="3" min="2" max="12" onchange="updateValue('y-value',this.value)">
+        <span id="y-value">3</span>
+        <label for="y">Rows</label>
+    </div>
+    <div>
+        <input type="range" id="players" name="players" value="2" min="2" max="6"
+            onchange="updateValue('players-value',this.value)">
+        <span id="players-value">2</span>
+        <label for="players">Players</label>
+    </div>
+    <div>
+        <input type="range" id="win" name="win" value="3" min="2" max="6"
+            onchange="updateValue('win-value',this.value)">
+        <span id="win-value">3</span>
+        <label for="win">Squares needed to Win</label>
+    </div>
+    <button class="btn">Start</button>
 </form>
+
+<script>
+    function updateValue(widget, value) {
+        document.getElementById(widget).textContent = value;
+    }
+</script>

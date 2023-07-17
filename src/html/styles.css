@@ -35,12 +35,19 @@ body {
 
 .grid-container {
   display: inline-grid;
-  grid-template-columns: repeat(4, 1fr); /* Sets 3 columns with equal width */
-  background-color: #2196F3;
+  grid-template-columns: repeat(3, minmax(50px, 1fr)); /* Sets 3 columns with equal width */
+  background-color: #222222;
   padding: 10px;
 }
 
-.grid-item {
+.grid-container-active {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(50px, 1fr)); /* Sets 3 columns with equal width */
+  background-color: #21F396;
+  padding: 10px;
+}
+
+.grid-used-square {
   background-color: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.8);
   padding: 20px;
@@ -49,8 +56,26 @@ body {
   color: darkblue;
 }
 
-.grid-item:hover {
-  background-color: blueviolet;
-  color: yellow;
+.grid-empty-square {
+  background-color: #282c34;
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  font-size: 30px;
+  text-align: center;
+  color: #484c54;
+}
+
+.grid-empty-square-clickable {
+  background-color: #282c34;
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  font-size: 30px;
+  text-align: center;
+  color: #484c54;
+}
+
+.grid-empty-square-clickable:hover {
+  background-color: #484c54;
+  color: #282c34;
 }
 
