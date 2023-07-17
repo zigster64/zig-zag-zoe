@@ -23,28 +23,32 @@ pub fn clear(self: *Self) void {
     @memset(&self.grid_buffer, 0);
 }
 
+fn offset(self: *Self, x: usize, y: usize) usize {
+    return x + (y * self.grid_x);
+}
+
 pub fn get(self: *Self, x: usize, y: usize) Errors.GameError!u8 {
     if (x < 0 or y < 0 or x >= self.grid_x or y >= self.grid_y) {
         return Errors.GameError.InvalidBoardPosition;
     }
-    const offset = x + (y * self.grid_y);
-    return self.grid_buffer[offset];
+    return self.grid_buffer[self.offset(x, y)];
 }
 
 pub fn put(self: *Self, x: usize, y: usize, value: u8) Errors.GameError!void {
     if (x < 0 or y < 0 or x >= self.grid_x or y >= self.grid_y) {
         return Errors.GameError.InvalidBoardPosition;
     }
-    const offset = x + (y * self.grid_y);
-    self.grid_buffer[offset] = value;
+    const o = self.offset(x, y);
+    std.log.info("doing a put at {},{}:{} -> {}", .{ x, y, o, value });
+    self.grid_buffer[o] = value;
 }
 
 pub fn victory(self: *Self, player: u8, runlength: u8) bool {
     std.log.debug("victory check for player {} with runlength {}", .{ player, runlength });
-    var offset: usize = 0;
+    var pos: usize = 0;
     for (0..self.grid_y) |y| {
         for (0..self.grid_x) |x| {
-            if (self.grid_buffer[offset] == player) {
+            if (self.grid_buffer[pos] == player) {
                 if (self.east(x, y, player, runlength)) {
                     return true;
                 }
@@ -58,7 +62,7 @@ pub fn victory(self: *Self, player: u8, runlength: u8) bool {
                     return true;
                 }
             }
-            offset += 1;
+            pos += 1;
         }
     }
     return false;
