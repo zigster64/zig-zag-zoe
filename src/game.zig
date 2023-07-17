@@ -338,11 +338,11 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         res.body = "Invalid Y Value";
         return;
     }
-    std.log.info("board.put {},{} = {}", .{ x, y, player });
+    std.log.debug("board.put {},{} = {}", .{ x, y, player });
     try self.board.put(x - 1, y - 1, player);
 
     if (self.board.victory(self.current_player, self.needed_to_win)) {
-        // std.log.info("Victory for player {}", .{self.current_player});
+        std.log.info("Victory for player {}", .{self.current_player});
         res.body = "Victory";
         self.signal(.victory);
         self.state = .winner;
@@ -350,7 +350,7 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     }
 
     if (self.board.is_full()) {
-        // std.log.info("Board is full - stalemate !", .{});
+        std.log.info("Board is full - stalemate !", .{});
         res.body = "Stalemate";
         self.signal(.stalemate);
         return;
