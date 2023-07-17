@@ -35,6 +35,7 @@ event_condition: std.Thread.Condition = .{},
 grid_x: u8 = 1,
 grid_y: u8 = 1,
 players: u8 = 2,
+needed_to_win: u8 = 3,
 grid: Grid = undefined,
 logged_in: [MAX_PLAYERS]bool = undefined,
 clocks: [MAX_PLAYERS]i64 = undefined,
@@ -43,7 +44,7 @@ last_event: Event = .none,
 
 start_time: i64 = undefined,
 
-pub fn init(grid_x: u8, grid_y: u8, players: u8) !Self {
+pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8) !Self {
     if (players > 8) {
         return Errors.GameError.TooManyPlayers;
     }
@@ -53,12 +54,22 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8) !Self {
         .grid_x = grid_x,
         .grid_y = grid_y,
         .players = players,
+        .needed_to_win = needed_to_win,
         .start_time = std.time.timestamp(),
     };
     for (0..MAX_PLAYERS) |i| {
         s.logged_in[i] = false;
     }
     return s;
+}
+
+pub fn addRoutes(self: *Self, router: anytype) void {
+    _ = self;
+    router.get("/events", Self.events);
+    router.get("/app", Self.app);
+    router.get("/header", Self.header);
+    router.post("/setup", Self.setup);
+    router.post("/login/:player", Self.login);
 }
 
 /// signal() function transitions the game state to the new state, and signals the event handlers to update
@@ -79,7 +90,7 @@ fn clock(self: *Self, stream: std.net.Stream) !void {
 }
 
 // header() GET req returns the title header, depending on the game state
-pub fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     std.log.info("GET /header {}", .{self.state});
     _ = req;
     self.game_mutex.lock();
@@ -104,7 +115,7 @@ pub fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 }
 
 /// app()  GET req returns the main app body, depending on the current state of the game, and the player
-pub fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const player = req.headers.get("x-player") orelse "";
 
     std.log.info("GET /app {} player {s}", .{ self.state, player });
@@ -135,7 +146,7 @@ pub fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 }
 
 // loginForm() handler returns either a login form, or a display of who we are waiting for if the user is logged in
-pub fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const w = res.writer();
     const player_value = req.headers.get("x-player") orelse "";
     const player = std.fmt.parseInt(u8, player_value, 10) catch 0;
@@ -165,7 +176,7 @@ pub fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 }
 
 /// login() POST handler logs this player in, and returns the playerID
-pub fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
     const player_value = req.param("player").?;
@@ -204,7 +215,7 @@ pub fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 }
 
 /// setup() POST requ sets up a new game, with specified grid size and number of players
-pub fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = res;
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
@@ -234,7 +245,7 @@ pub fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     }
 }
 
-pub fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     std.log.info("(event-source) GET /events {}", .{self.state});
     _ = req;
     const clock_interval = std.time.ns_per_s * 30;

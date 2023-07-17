@@ -4,9 +4,43 @@ const Game = @import("game.zig");
 
 const www_path = "www"; // set this to the base path where the WebApp lives
 
+pub fn usage() void {
+    std.debug.print("USAGE: zig-zag-zoe [-p PORTNUMBER]\n", .{});
+    std.debug.print("       or use the PORT env var to set the port, for like Docker or whatever\n", .{});
+}
+
 pub fn main() !void {
+    var port: u16 = 3000;
+
+    var env_port = std.os.getenv("PORT");
+    if (env_port != null and env_port.?.len > 0) {
+        port = try std.fmt.parseInt(u16, env_port.?, 10);
+        std.debug.print("Port set to {} via ENV\n", .{port});
+    }
+
+    var args = std.process.args();
+    defer args.deinit();
+
+    // parse params
+    _ = args.skip();
+
+    // parse any option commands
+    while (args.next()) |arg| {
+        std.debug.print("arg {s}\n", .{arg});
+        if (std.mem.eql(u8, "-p", arg)) {
+            const f = args.next() orelse {
+                std.debug.print("Option -port must be followed by a port number to listen on\n", .{});
+                usage();
+                return;
+            };
+            port = try std.fmt.parseInt(u16, f, 10);
+            std.debug.print("Port set to {} via parameters\n", .{port});
+            continue;
+        }
+    }
+
     std.debug.print("Starting Zig-Zag-Zoe server with new game.\n", .{});
-    std.debug.print("Go to http://localhost:3000 to run the game\n", .{});
+    std.debug.print("Go to http://localhost:{} to run the game\n", .{port});
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
@@ -14,10 +48,14 @@ pub fn main() !void {
     var grid_x: u8 = 3;
     var grid_y: u8 = 3;
     var players: u8 = 2;
+    var win: u8 = 3;
 
-    var game = try Game.init(grid_x, grid_y, players);
+    var game = try Game.init(grid_x, grid_y, players, win);
 
-    var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{ .port = 3000 }, &game);
+    var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{
+        .address = "0.0.0.0",
+        .port = port,
+    }, &game);
     // server.notFound(fileServer);
     server.notFound(notFound);
     server.errorHandler(errorHandler);
@@ -26,11 +64,9 @@ pub fn main() !void {
     router.get("/", indexHTML);
     router.get("/index.html", indexHTML);
     router.get("/styles.css", stylesCSS);
-    router.get("/events", Game.events);
-    router.get("/app", Game.app);
-    router.get("/header", Game.header);
-    router.post("/setup", Game.setup);
-    router.post("/login/:player", Game.login);
+
+    // connect the game object to the router
+    game.addRoutes(router);
 
     return server.listen();
 }
