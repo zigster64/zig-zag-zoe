@@ -75,7 +75,7 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8)
 
 fn newCanFlip(self: *Self) bool {
     const x = self.prng.random().int(u8) % (11);
-    return x > self.flipper;
+    return x < self.flipper;
 }
 
 pub fn addRoutes(self: *Self, router: anytype) void {

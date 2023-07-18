@@ -1,29 +1,28 @@
 <form hx-post="/setup" hx-ext="json-enc">
     <div>
-        <input type="range" id="x" name="x" value="3" min="2" max="15" onchange="updateValue('x-value',this.value)">
+        <input type="range" id="x" name="x" value="3" min="2" max="15" oninput="updateValue('x-value',this.value)">
         <span id="x-value">3</span>
         <label for="x">Columns</label>
     </div>
     <div>
-        <input type="range" id="y" name="y" value="3" min="2" max="12" onchange="updateValue('y-value',this.value)">
+        <input type="range" id="y" name="y" value="3" min="2" max="12" oninput="updateValue('y-value',this.value)">
         <span id="y-value">3</span>
         <label for="y">Rows</label>
     </div>
     <div>
         <input type="range" id="players" name="players" value="2" min="2" max="6"
-            onchange="updateValue('players-value',this.value)">
+            oninput="updateValue('players-value',this.value)">
         <span id="players-value">2</span>
         <label for="players">Players</label>
     </div>
     <div>
-        <input type="range" id="win" name="win" value="3" min="2" max="6"
-            onchange="updateValue('win-value',this.value)">
+        <input type="range" id="win" name="win" value="3" min="2" max="6" oninput="updateValue('win-value',this.value)">
         <span id="win-value">3</span>
         <label for="win">Squares needed to Win</label>
     </div>
     <div>
         <input type="range" id="win" name="flipper" value="0" min="0" max="10"
-            onchange="updateValue('flipper-value',this.value * 10)">
+            oninput="updateValue('flipper-value',this.value * 10)">
         <span id="flipper-value">0</span>
         <label for="flipper">% Chance of a Flipper ?</label>
     </div>
