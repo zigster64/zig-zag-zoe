@@ -19,6 +19,11 @@ body {
   font-size: 48px;
 }
 
+.footer {
+    color: gray;
+    font-size: 14px;
+}
+
 .hidden {
   opacity: 0;
 }
@@ -32,6 +37,7 @@ body {
   color: orange;
   font-size: 48px;
 }
+
 
 .grid-container {
   display: inline-grid;
@@ -48,6 +54,18 @@ body {
 .inactive-player {
   background-color: #217683;
   padding: 8px;
+}
+
+.green {
+  color: #21F396;
+}
+
+.red {
+    color: #F39621;
+}
+
+.yellow {
+    color: wheat;
 }
 
 .red-button {
@@ -72,16 +90,50 @@ body {
     box-shadow: inset -2px -2px 3px rgba(255, 255, 255, 0.6), inset 2px 2px 3px rgba(0, 0, 0, 0.6);
 }
 
-.grid-used-square {
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.8);
-  padding: 20px;
-  font-size: 30px;
-  text-align: center;
-  color: darkblue;
+.green-button {
+    border: 0;
+    line-height: 2.5;
+    padding: 0 20px;
+    font-size: 1rem;
+    text-align: center;
+    color: #fff;
+    text-shadow: 1px 1px 1px #000;
+    border-radius: 10px;
+    background-color: rgba(0, 255, 88, 1);
+    background-image: linear-gradient(to top left, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2) 30%, rgba(0, 0, 0, 0.5));
+    box-shadow: inset 2px 2px 3px rgba(255, 255, 255, 0.6), inset -2px -2px 3px rgba(0, 0, 0, 0.6);
 }
 
-.grid-empty-square {
+.green-button:hover {
+    background-color: rgba(0, 255, 88, 1);
+}
+
+.green-button:active {
+    box-shadow: inset -2px -2px 3px rgba(255, 255, 255, 0.6), inset 2px 2px 3px rgba(0, 0, 0, 0.6);
+}
+
+.login-button {
+    border: 0;
+    line-height: 2.5;
+    padding: 0 20px;
+    font-size: 2rem;
+    text-align: center;
+    color: #000;
+    text-shadow: 1px 1px 1px #000;
+    border-radius: 10px;
+    background-image: linear-gradient(to top left, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2) 30%, rgba(0, 0, 0, 0));
+    box-shadow: inset 2px 2px 3px rgba(255, 255, 255, 0.6), inset -2px -2px 3px rgba(0, 0, 0, 0.6);
+}
+
+.login-button:hover {
+    background-image: linear-gradient(to top left, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) 30%, rgba(0, 0, 0, 0.5));
+}
+
+.login-button:active {
+    box-shadow: inset -2px -2px 3px rgba(255, 255, 255, 0.6), inset 2px 2px 3px rgba(0, 0, 0, 0.6);
+}
+
+.grid-square {
   background-color: #282c34;
   border: 1px solid rgba(0, 0, 0, 0.8);
   padding: 20px;
@@ -90,7 +142,7 @@ body {
   color: #484c54;
 }
 
-.grid-empty-square-clickable {
+.grid-square-clickable {
   background-color: #282c34;
   border: 1px solid rgba(0, 0, 0, 0.8);
   padding: 20px;
@@ -99,8 +151,41 @@ body {
   color: #484c54;
 }
 
-.grid-empty-square-clickable:hover {
+.grid-square-clickable:hover {
   background-color: #484c54;
   color: #282c34;
+}
+
+.player1 {
+    background-color: #E6B0AA;
+}
+
+.player2 {
+    background-color: #D7BDE2;
+}
+
+.player3 {
+    background-color: #A9CCE3;
+}
+
+.player4 {
+    background-color: #A4D3E7;
+}
+
+.player5 {
+    background-color: #F9E79F;
+}
+
+.player6 {
+    background-color: #EDBB99;
+}
+
+.player7 {
+    background-color: #AEB6EF;
+}
+
+.player8 {
+    background-color: #000000;
+    color: #FF2200;
 }
 

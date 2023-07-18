@@ -37,6 +37,7 @@ grid_x: u8 = 1,
 grid_y: u8 = 1,
 players: u8 = 2,
 needed_to_win: u8 = 3,
+flipper: u8 = 0,
 board: Board = undefined,
 logged_in: [MAX_PLAYERS]bool = undefined,
 clocks: [MAX_PLAYERS]i64 = undefined,
@@ -45,7 +46,7 @@ last_event: Event = .none,
 start_time: i64 = undefined,
 current_player: u8 = 0,
 
-pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8) !Self {
+pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8) !Self {
     if (players > 8) {
         return Errors.GameError.TooManyPlayers;
     }
@@ -56,6 +57,7 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8) !Self {
         .grid_y = grid_y,
         .players = players,
         .needed_to_win = needed_to_win,
+        .flipper = flipper,
         .start_time = std.time.timestamp(),
     };
     for (0..MAX_PLAYERS) |i| {
@@ -101,40 +103,41 @@ fn clock(self: *Self, stream: std.net.Stream) !void {
     try stream.writer().print("data: {d}\n\n", .{std.time.timestamp() - self.start_time});
 }
 
+/// getPlayer is a utility function to extract the player ID from the request header
+fn getPlayer(self: *Self, req: *httpz.Request) u8 {
+    std.debug.print("getting player and header looks like {s}", .{req.headers.get("x-player") orelse ""});
+    _ = self;
+    return std.fmt.parseInt(u8, req.headers.get("x-player") orelse "", 10) catch @as(u8, 0);
+}
+
 // header() GET req returns the title header, depending on the game state
 fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
-    const player_value = req.headers.get("x-player") orelse "";
-    const player = std.fmt.parseInt(u8, player_value, 10) catch 0;
+    const player = self.getPlayer(req);
     std.log.info("GET /header {} player {}", .{ self.state, player });
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
     switch (self.state) {
         .init => {
-            res.body = "Setup New Game <script>setPlayer(0)</script>";
+            res.body = @embedFile("html/header/init.html");
         },
         .login => {
-            res.body = "Waiting for Logins";
+            res.body = @embedFile("html/header/login.html");
         },
         .running => {
             const w = res.writer();
-            try w.print(
-                \\ <div>Player {}'s turn</div>
-                \\ <div>Clock:
-                \\ <span class="clock" hx-ext="sse" sse-connect="/events" sse-swap="clock">
-                \\ </span>
-                \\ Seconds
-                \\ </div>
-            , .{self.current_player});
+            try w.print(@embedFile("html/header/running.x.html"), .{
+                .current_player = self.current_player,
+            });
         },
         .winner => {
             if (player == self.current_player) {
-                res.body = "Victory !";
+                res.body = @embedFile("html/header/winner-victory.html");
             } else {
-                res.body = "Game Over, You LOST !";
+                res.body = @embedFile("html/header/winner-lost.html");
             }
         },
         .stalemate => {
-            res.body = "Game over, nobody can win from here";
+            res.body = @embedFile("html/header/stalemate.html");
         },
     }
 }
@@ -163,33 +166,20 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         .winner => {
             try self.showBoard(0, res);
             const w = res.writer();
-            try w.writeAll(
-                \\ <input type="button" hx-post="/restart" onclick="setPlayer(0)" value="Restart with New Game" class="red-button">
-            );
+            try w.writeAll(@embedFile("html/widgets/restart-button.html"));
         },
         .stalemate => {
-            res.body = "The board is blocked, and nobody can win from here";
+            res.body = @embedFile("html/stalemate.html");
         },
     }
 }
 
 fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     const w = res.writer();
-
-    if (player == self.current_player) {
-        try w.writeAll(
-            \\ <div class="active-player">
-        );
-    } else {
-        try w.writeAll(
-            \\ <div class="inactive-player">
-        );
-    }
-
-    try w.print(
-        \\ <script>setGridColumns({});</script>
-        \\ <div class="grid-container">
-    , .{self.grid_x});
+    try w.print(@embedFile("html/board/start-grid.x.html"), .{
+        .class = if (player == self.current_player) "active-player" else "inactive-player",
+        .columns = self.grid_x,
+    });
 
     for (0..self.grid_y) |y| {
         for (0..self.grid_x) |x| {
@@ -197,40 +187,33 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
 
             // used square that we cant click on
             if (value != 0) {
-                try w.print(
-                    \\ <div class="grid-used-square">
-                    \\ {}
-                    \\ </div>
-                , .{try self.board.get(x, y)});
+                try w.print(@embedFile("html/board/square.x.html"), .{
+                    .class = "grid-square",
+                    .player = value,
+                });
                 continue;
             }
 
             // we are the active player, and the square is not used yet
             if (self.state == .running and player == self.current_player) {
-                try w.print(
-                    \\ <div class="grid-empty-square-clickable" hx-post="/square/{}/{}"
-                , .{ x + 1, y + 1 });
-                try w.writeAll(
-                    \\ hx-headers='js:{"x-player": getPlayer()}'>
-                    \\ ?
-                    \\ </div>
-                );
+                try w.print(@embedFile("html/board/clickable-square.x.html"), .{
+                    .class = "grid-square-clickable",
+                    .x = x + 1,
+                    .y = y + 1,
+                    .player = value,
+                });
                 continue;
             }
 
             // empty square that we cant click on,because its another player's turn
-            try w.print(
-                \\ <div class="grid-empty-square">
-                \\ ?
-                \\ </div> 
-            , .{});
+            try w.print(@embedFile("html/board/square.x.html"), .{
+                .class = "grid-square",
+                .player = value,
+            });
         }
     }
 
-    try w.writeAll(
-        \\ </div>
-        \\ </div>
-    );
+    try w.writeAll(@embedFile("html/board/end-grid.html"));
 
     return;
 }
@@ -240,34 +223,31 @@ fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const w = res.writer();
     const player_value = req.headers.get("x-player") orelse "";
     const player = std.fmt.parseInt(u8, player_value, 10) catch 0;
+
     if (player > 0) {
-        try w.writeAll("Waiting for players :<ul>");
+        try w.writeAll(@embedFile("html/login/waiting-title.html"));
         for (0..self.players) |p| {
             if (!self.logged_in[p]) {
-                try w.print("<li>Player {}</li>", .{p + 1});
+                try w.print(@embedFile("html/login/waiting-player.x.html"), .{
+                    .player = p + 1,
+                });
             }
         }
-        try w.writeAll("</ul>");
+        try w.writeAll(@embedFile("html/login/waiting-end.html"));
         return;
     }
 
-    std.log.debug("loginForm not logged in yet", .{});
-
-    try w.print("<div>", .{});
-    try w.print("<p>Select which player to play as:</p>", .{});
-    try w.print("<ul>", .{});
+    try w.writeAll(@embedFile("html/login/login-form-start.html"));
 
     for (0..self.players) |i| {
         if (!self.logged_in[i]) {
-            const p = i + 1;
-            try w.print(
-                \\ <li hx-post="/login/{}" hx-target="#player" onclick="setPlayer({})">Player {}</li>
-            , .{ p, p, p });
+            try w.print(@embedFile("html/login/login-form-select-player.x.html"), .{
+                .player = i + 1,
+            });
         }
     }
 
-    try w.print("</ul>", .{});
-    try w.print("</div>", .{});
+    try w.writeAll(@embedFile("html/login/login-form-end.html"));
 }
 
 /// login() POST handler logs this player in, and returns the playerID
@@ -353,6 +333,7 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         std.log.info("Board is full - stalemate !", .{});
         res.body = "Stalemate";
         self.signal(.stalemate);
+        self.state = .stalemate;
         return;
     }
 
@@ -373,6 +354,7 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         y: u8,
         players: u8,
         win: u8,
+        flipper: u8,
     };
 
     // sanity check the inputs !
@@ -397,6 +379,7 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         self.grid_y = setup_request.y;
         self.players = setup_request.players;
         self.needed_to_win = setup_request.win;
+        self.flipper = setup_request.flipper;
         self.board = try Board.init(self.grid_x, self.grid_y);
         for (0..MAX_PLAYERS) |i| {
             self.logged_in[i] = false;

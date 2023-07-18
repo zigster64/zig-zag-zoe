@@ -21,7 +21,13 @@
         <span id="win-value">3</span>
         <label for="win">Squares needed to Win</label>
     </div>
-    <button class="btn">Start</button>
+    <div>
+        <input type="range" id="win" name="flipper" value="0" min="0" max="10"
+            onchange="updateValue('flipper-value',this.value)">
+        <span id="flipper-value">0</span>
+        <label for="flipper">Chance of a Flipper ?</label>
+    </div>
+    <button class="green-button">Start</button>
 </form>
 
 <script>
