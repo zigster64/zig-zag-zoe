@@ -5,7 +5,7 @@ clean:
 	rm -rf zig-cache zig-out
 
 run:
-	zig build run
+	zig build -Doptimize=ReleaseFast run
 
 docker: docker-build
 
