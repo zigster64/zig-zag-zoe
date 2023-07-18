@@ -38,6 +38,7 @@ grid_y: u8 = 1,
 players: u8 = 2,
 needed_to_win: u8 = 3,
 flipper: u8 = 0,
+can_flip: bool = false,
 board: Board = undefined,
 logged_in: [MAX_PLAYERS]bool = undefined,
 clocks: [MAX_PLAYERS]i64 = undefined,
@@ -45,11 +46,16 @@ state: State = .init,
 last_event: Event = .none,
 start_time: i64 = undefined,
 current_player: u8 = 0,
+prng: std.rand.Xoshiro256 = undefined,
 
 pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8) !Self {
     if (players > 8) {
         return Errors.GameError.TooManyPlayers;
     }
+
+    // seed the RNG
+    var os_seed: u64 = undefined;
+    try std.os.getrandom(std.mem.asBytes(&os_seed));
 
     var s = Self{
         .board = try Board.init(grid_x, grid_y),
@@ -59,11 +65,17 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8)
         .needed_to_win = needed_to_win,
         .flipper = flipper,
         .start_time = std.time.timestamp(),
+        .prng = std.rand.DefaultPrng.init(os_seed),
     };
     for (0..MAX_PLAYERS) |i| {
         s.logged_in[i] = false;
     }
     return s;
+}
+
+fn newCanFlip(self: *Self) bool {
+    const x = self.prng.random().int(u8) % (11);
+    return x > self.flipper;
 }
 
 pub fn addRoutes(self: *Self, router: anytype) void {
@@ -105,7 +117,6 @@ fn clock(self: *Self, stream: std.net.Stream) !void {
 
 /// getPlayer is a utility function to extract the player ID from the request header
 fn getPlayer(self: *Self, req: *httpz.Request) u8 {
-    std.debug.print("getting player and header looks like {s}", .{req.headers.get("x-player") orelse ""});
     _ = self;
     return std.fmt.parseInt(u8, req.headers.get("x-player") orelse "", 10) catch @as(u8, 0);
 }
@@ -144,10 +155,8 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
 /// app()  GET req returns the main app body, depending on the current state of the game, and the player
 fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
-    const player_value = req.headers.get("x-player") orelse "";
-    const player = std.fmt.parseInt(u8, player_value, 10) catch 0;
-
-    std.log.info("GET /app {} player {s}", .{ self.state, player_value });
+    const player = self.getPlayer(req);
+    std.log.info("GET /app {} player {}", .{ self.state, player });
 
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
@@ -174,10 +183,20 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     }
 }
 
+fn calcBoardClass(self: *Self, player: u8) []const u8 {
+    if (player == self.current_player) {
+        if (self.can_flip) {
+            return "active-player-flip";
+        }
+        return "active-player";
+    }
+    return "inactive-player";
+}
+
 fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     const w = res.writer();
     try w.print(@embedFile("html/board/start-grid.x.html"), .{
-        .class = if (player == self.current_player) "active-player" else "inactive-player",
+        .class = self.calcBoardClass(player),
         .columns = self.grid_x,
     });
 
@@ -185,8 +204,19 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
         for (0..self.grid_x) |x| {
             const value = try self.board.get(x, y);
 
-            // used square that we cant click on
+            // used square that we cant normally click on
             if (value != 0) {
+                if (self.can_flip and self.state == .running and player == self.current_player) {
+                    // BUT ! we have flipper powers this turn, so we can change another player's piece to our piece !
+                    try w.print(@embedFile("html/board/clickable-square.x.html"), .{
+                        .class = "grid-square-clickable",
+                        .x = x + 1,
+                        .y = y + 1,
+                        .player = value,
+                    });
+                    continue;
+                }
+
                 try w.print(@embedFile("html/board/square.x.html"), .{
                     .class = "grid-square",
                     .player = value,
@@ -221,8 +251,7 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
 // loginForm() handler returns either a login form, or a display of who we are waiting for if the user is logged in
 fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const w = res.writer();
-    const player_value = req.headers.get("x-player") orelse "";
-    const player = std.fmt.parseInt(u8, player_value, 10) catch 0;
+    const player = self.getPlayer(req);
 
     if (player > 0) {
         try w.writeAll(@embedFile("html/login/waiting-title.html"));
@@ -299,8 +328,7 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const x = std.fmt.parseInt(usize, req.param("x").?, 10) catch 0;
     const y = std.fmt.parseInt(usize, req.param("y").?, 10) catch 0;
 
-    const player_value = req.headers.get("x-player") orelse "";
-    const player = std.fmt.parseInt(u8, player_value, 10) catch 0;
+    const player = self.getPlayer(req);
 
     // std.log.info("POST square {},{} for player {}", .{ x, y, player });
     if (player < 1 or player > self.players) {
@@ -341,6 +369,8 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     if (self.current_player > self.players) {
         self.current_player = 1;
     }
+
+    self.can_flip = self.newCanFlip();
     self.signal(.next);
 }
 
@@ -380,6 +410,9 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         self.players = setup_request.players;
         self.needed_to_win = setup_request.win;
         self.flipper = setup_request.flipper;
+
+        self.can_flip = self.newCanFlip();
+
         self.board = try Board.init(self.grid_x, self.grid_y);
         for (0..MAX_PLAYERS) |i| {
             self.logged_in[i] = false;

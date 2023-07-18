@@ -23,9 +23,9 @@
     </div>
     <div>
         <input type="range" id="win" name="flipper" value="0" min="0" max="10"
-            onchange="updateValue('flipper-value',this.value)">
+            onchange="updateValue('flipper-value',this.value * 10)">
         <span id="flipper-value">0</span>
-        <label for="flipper">Chance of a Flipper ?</label>
+        <label for="flipper">% Chance of a Flipper ?</label>
     </div>
     <button class="green-button">Start</button>
 </form>

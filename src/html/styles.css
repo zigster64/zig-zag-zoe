@@ -51,6 +51,11 @@ body {
   padding: 8px;
 }
 
+.active-player-flip {
+  background-color: #F99621;
+  padding: 8px;
+}
+
 .inactive-player {
   background-color: #217683;
   padding: 8px;
