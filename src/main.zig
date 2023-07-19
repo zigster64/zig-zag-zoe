@@ -2,8 +2,6 @@ const std = @import("std");
 const httpz = @import("httpz");
 const Game = @import("game.zig");
 
-const www_path = "www"; // set this to the base path where the WebApp lives
-
 pub fn usage() void {
     std.debug.print("USAGE: zig-zag-zoe [-p PORTNUMBER]\n", .{});
     std.debug.print("       or use the PORT env var to set the port, for like Docker or whatever\n", .{});
@@ -99,19 +97,4 @@ fn stylesCSS(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
     _ = req;
     _ = ctx;
     res.body = @embedFile("html/styles.css");
-}
-
-fn fileServer(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
-    _ = ctx;
-    const path = req.url.path;
-    std.debug.print("GET {s}\n", .{path});
-
-    var new_path = try std.mem.concat(res.arena, u8, &[_][]const u8{ www_path, path });
-    var index_file = std.fs.cwd().openFile(new_path, .{}) catch {
-        res.status = 404;
-        res.body = "File not found";
-        return;
-    };
-    defer index_file.close();
-    res.body = try index_file.readToEndAlloc(res.arena, 1 * 1024 * 1024); // 1MB should be enough for anyone !
 }
