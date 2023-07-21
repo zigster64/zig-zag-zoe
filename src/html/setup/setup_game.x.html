@@ -1,0 +1,33 @@
+<form hx-post="/setup" hx-ext="json-enc">
+    <div>
+        <input type="range" id="x" name="x" value="{[x]}" min="2" max="15"
+            oninput="document.getElementById('x-value').textContent = this.value">
+        <span id="x-value">{[x]}</span>
+        <label for="x">Columns</label>
+    </div>
+    <div>
+        <input type="range" id="y" name="y" value="{[y]}" min="2" max="12"
+            oninput="document.getElementById('y-value').textContent = this.value">
+        <span id="y-value">{[y]}</span>
+        <label for="y">Rows</label>
+    </div>
+    <div>
+        <input type="range" id="players" name="players" value="{[players]}" min="2" max="6"
+            oninput="document.getElementById('players-value').textContent = this.value">
+        <span id="players-value">{[players]}</span>
+        <label for="players">Players</label>
+    </div>
+    <div>
+        <input type="range" id="win" name="win" value="{[win]}" min="2" max="6"
+            oninput="document.getElementById('win-value').textContent = this.value">
+        <span id="win-value">{[win]}</span>
+        <label for="win">Squares needed to Win</label>
+    </div>
+    <div>
+        <input type="range" id="win" name="flipper" value="{[flipper]}" min="0" max="100" step="10"
+            oninput="document.getElementById('flipper-value').textContent = this.value">
+        <span id="flipper-value">{[flipper]}</span>
+        <label for="flipper">% Chance of a Flipper ?</label>
+    </div>
+    <button class="green-button">Start</button>
+</form>

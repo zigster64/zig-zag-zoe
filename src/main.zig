@@ -57,7 +57,6 @@ pub fn main() !void {
         .address = "0.0.0.0",
         .port = port,
     }, &game);
-    // server.notFound(fileServer);
     server.notFound(notFound);
     server.errorHandler(errorHandler);
 

@@ -41,7 +41,9 @@ body {
 
 .grid-container {
   display: inline-grid;
-  grid-template-columns: repeat(3, minmax(50px, 1fr)); /* Sets 3 columns with equal width */
+  /* grid-template-columns: repeat(3, minmax(50px, 1fr)); /* Sets 3 columns with equal width */
+  grid-template-columns: repeat(var(--Cols), minmax(80px, 1fr));
+
   background-color: #222222;
   padding: 8px;
 }
@@ -49,16 +51,19 @@ body {
 .active-player {
   background-color: #21F396;
   padding: 8px;
+  transition: all ease-in 1s ;
 }
 
 .active-player-flip {
   background-color: #F99621;
   padding: 8px;
+  transition: all ease-in 1s ;
 }
 
 .inactive-player {
   background-color: #217683;
   padding: 8px;
+  transition: all ease-in 1s ;
 }
 
 .green {

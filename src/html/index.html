@@ -25,7 +25,8 @@
 
 
     <!-- main app widget goes in here -->
-    <div id="game" hx-get="/app" hx-headers='js:{"x-player": getPlayer()}' hx-trigger="load, sse:update">
+    <div id="game" hx-get="/app" hx-headers='js:{"x-player": getPlayer()}' hx-trigger="load, sse:update"
+        hx-indicator="">
         .. Game contents go in here ..
     </div>
 
@@ -51,12 +52,6 @@
 
         function setPlayer(p) {
             document.getElementById("player").innerText = p;
-        }
-
-        function setGridColumns(numColumns) {
-            console.log("setting grid columns to", numColumns);
-            var gridContainer = document.querySelector('.grid-container');
-            gridContainer.style.gridTemplateColumns = `repeat(${numColumns}, minmax(50px, 1fr))`;
         }
     </script>
 </body>
