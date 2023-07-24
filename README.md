@@ -85,6 +85,14 @@ seems to zap 1 other adjacent square.  Maybe. Cant reproduce it yet.
 I will either fix this bug, or leave it in there as a feature - rationale is that there might be some bomb residue laying around
 after someone set us up the bomb.
 
+## Bug 2
+
+There is another bug somewhere, where the browser client can get stuck in a state where its missing the event updates. Only happens
+if you do bad things like hack the HTML in dev tools in the browser, or restart the backend with an updated version, whilst the
+frontend is still running an older version, and hasnt refreshed.
+
+Not sure, but there are ways of breaking it. Would like to fix these.
+
 
 # Whats Interesting
 
