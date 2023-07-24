@@ -46,7 +46,8 @@ Now point your browsers at http://localhost:3000
 - Once logged in, you will see (in real time) who we are waiting on, and watch as they all login.
 - Once everyone has logged in, the board is presented, and the game begins !
 - Main screen on. Make your move ZIG !
-- Keep playing until someone set us up the win
+- Keep playing until someone set us up the win, by selecting grid squares all in a row.
+- Random options (Zero Wing, and Bomb), can make the win much harder than it at first looks.
 
 ## The Clock / Timer
 
