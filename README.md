@@ -73,7 +73,7 @@ Each turn, a player may randomly get Zero Wing Enabled. In this mode, the border
 ## Set us up the Bomb
 
 Each turn, a player may randomly get "Someone set us up the bomb". In this mode, the border of the board is printed in red,
-and when they click on an EMPTY square, then their piece is placed in that square AND all adjacent squares are emptied out.
+and when they click on an EMPTY square, then their piece is placed in that square AND all adjacent squares are blasted to zero atom dust, obliterated.
 
 Be careful where you click, because you just might wipe out your own pieces.
 
@@ -92,6 +92,18 @@ if you do bad things like hack the HTML in dev tools in the browser, or restart 
 frontend is still running an older version, and hasnt refreshed.
 
 Not sure, but there are ways of breaking it. Would like to fix these.
+
+## More Modes and Gameplay ideas
+
+Thinking up some new random modes to add to make the game harder - ideas most welcome.
+
+- Poison square ... make the grid square permanently unusable
+- Skip ... skip the next player's turn, they miss out
+- Reverso ... like uno reverso, reverses the order in which players take turns
+- Team Play ... allow multiple users to collab as a team
+- Exotic Victory Conditions ... Not just lines, but other shapes to allow victory
+
+
 
 
 # Whats Interesting
