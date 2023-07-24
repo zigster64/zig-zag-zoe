@@ -36,24 +36,15 @@ Now point your browsers at http://localhost:3000
 # GamePlay
 
 - Set us up a new game
-
-Choose the number of rows and columns for the grid.
-
-Choose the number of players.
-
-Choose the number of squares needed to win.
-
-Choose a % chance of a Zero Wing.
-
-Chosse a % chance to set us up the bomb.
-
-Click START
-
-At this point, the system will wait for all players to login - which is done by simply selecting which player to play as.
-
-Once logged in, you will see (in real time) who we are waiting on, and watch as they all login.
-
-Once everyone has logged in, the board is presented, and the game begins !
+- Choose the number of rows and columns for the grid.
+- Choose the number of players.
+- Choose the number of squares needed to win.
+- Choose a % chance of a Zero Wing.
+- Chosse a % chance to set us up the bomb.
+- Click START
+- At this point, the system will wait for all players to login - which is done by simply selecting which player to play as.
+- Once logged in, you will see (in real time) who we are waiting on, and watch as they all login.
+- Once everyone has logged in, the board is presented, and the game begins !
 
 ## The Clock / Timer
 
