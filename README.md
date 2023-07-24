@@ -45,6 +45,8 @@ Now point your browsers at http://localhost:3000
 - At this point, the system will wait for all players to login - which is done by simply selecting which player to play as.
 - Once logged in, you will see (in real time) who we are waiting on, and watch as they all login.
 - Once everyone has logged in, the board is presented, and the game begins !
+- Main screen on. Make your move ZIG !
+- Keep playing until someone set us up the win
 
 ## The Clock / Timer
 
