@@ -8,6 +8,8 @@ http://zig-zag-zoe.com
 
 ** Uses Zig Master  0.11-dev **
 
+![screenshot](https://github.com/zigster64/zig-zag-zoe/blob/main/src/images/zzz-screenshot.jpg)
+
 # Install
 
 ```
