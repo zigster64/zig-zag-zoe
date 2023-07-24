@@ -91,6 +91,8 @@ This code is interesting for the following reasons :
 
 - Its all written in Zig
 - It uses the excellent http.zig library https://github.com/karlseguin/http.zig
+- Generated docker image = about 300kb
+- Run stats - uses about 60MB RAM and really low CPU %
 - Its about as simple as doing the same thing in Go, there is really nothing too nasty required in the code.  
 - The router, and all the HTML contents is part of the Game object ... the implications of this are that it is possible to create 'web components' using this
 zig/htmx approach that are all self contained, and can be imported into other projects, without having to know about connecting up routes, or pulling in content. Interesting.
