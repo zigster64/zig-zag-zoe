@@ -98,14 +98,16 @@ This code is interesting for the following reasons :
 
 - Its all written in Zig
 - It uses the excellent http.zig library https://github.com/karlseguin/http.zig
-- Note that the router is decorated inside the Game object ... the implications of this are that it is possible to create 'web components' using this
-zig/htmx approach that are all self contained, and can be imported into other projects, without having to know about connecting up routes. Interesting.
-- Uses SSE / Event Streams to keep it all realtime updates with pub/sub from multiple players
+- Its about as simple as doing the same thing in Go, there is really nothing too nasty required in the code.  
+- The router, and all the HTML contents is part of the Game object ... the implications of this are that it is possible to create 'web components' using this
+zig/htmx approach that are all self contained, and can be imported into other projects, without having to know about connecting up routes, or pulling in content. Interesting.
+- Uses SSE / Event Streams to keep it all realtime updates with pub/sub from multiple players. Is simple, and it works.
+- Demonstrates how to do threading, thread conditions / signalling, and using mutexes to make object updates thread safe.
 - No websockets needed
 - There is pretty much NO JAVASCRIPT on the frontend. It uses HTMX https://htmx.org ... which is an alternative approach to web clients, where the frontend is pure hypertext, and everything is done on the backend
 - There is a tiny bit of JS, to update the session ID, but im still thinking up a way of getting rid of that as well.
-- Uses std.fmt.print() as the templating engine.  I didnt know before, but you can used named tags inside the comptime format string, and use those to reference fields in the args param. 
-Actually makes for a half decent templating tool.
+- Uses std.fmt.print() as the templating engine.  I didnt know before, but you can use named tags inside the comptime format string, and use those to reference fields in the args param. 
+Actually makes for a half decent templating tool, without having to find and import a templating lib.
 
 
 ## HTMX thoughts
@@ -115,7 +117,10 @@ Yeah, its pretty cool, worth adding to your toolbelt. Not sure its really a 'rep
 What it is 100% excellent for though is for doing apps where there is a lot of shared state between users. (Like a turn based game !) In that case, doing everything on the server, and not having any state
 at all on the frontend to sync, is really ideal.  Its a good fit to this sort of problem.
 
+Its super robust. You can do horrible things like reboot the backend, or hard refresh the front end(s) ... and it maintains state without a hiccup, and without needing any exception handling code at all. 
+Very nice. It would be a nightmare doing this in react.
+
 There are some very complex things you could do with a turn-based-multiplayer-game type of model though (doesnt have to be a game even) And being able to do that without touching JS, or
 writing a tonne of code to synch state on the frontends is really nice.
 
-Its also a reasonable model for doing shared state between GUI frontends, just using the HTTP/SSE protocol too.
+Its also a reasonable model for doing shared state between GUI frontends, just using the HTTP/SSE protocol too. Its just HTTP requests, so the networking is totally portable.

@@ -56,6 +56,7 @@ current_player: u8 = 0,
 prng: std.rand.Xoshiro256 = undefined,
 watcher: std.Thread = undefined,
 
+/// init returns a new Game object
 pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8) !Self {
     if (players > 8) {
         return Errors.GameError.TooManyPlayers;
@@ -80,11 +81,13 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8)
     return s;
 }
 
+/// startWatcher starts a thread to watch a given game
 pub fn startWatcher(self: *Self) !void {
     self.watcher = try std.Thread.spawn(.{}, Self.watcherThread, .{self});
     self.watcher.detach();
 }
 
+/// watcherThread loops forever, updating the state based upon expiring clocks
 fn watcherThread(self: *Self) void {
     while (true) {
         self.game_mutex.lock();
@@ -107,6 +110,8 @@ fn watcherThread(self: *Self) void {
     }
 }
 
+/// randPlayerMode will return a newly generated mode base of the % chance of things in the current game settings.
+/// use this to get a random mode for the next player's turn at the end of the turn.
 fn randPlayerMode(self: *Self) PlayerMode {
     const dice = (self.prng.random().int(u8) % (11)) * 10;
     if (dice < self.flipper_chance) {
@@ -118,6 +123,7 @@ fn randPlayerMode(self: *Self) PlayerMode {
     return .normal;
 }
 
+/// addRoutes sets up the routes and handlers used in this game object
 pub fn addRoutes(self: *Self, router: anytype) void {
     _ = self;
     router.get("/events", Self.events); // SSE event stream of game state changes
@@ -140,6 +146,7 @@ fn signal(self: *Self, ev: Event) void {
     std.log.info("signal event {}", .{ev});
 }
 
+/// reboot will reboot the server back to the vanilla state. Call this when everything has timed out, and we want to go right back to the original start
 fn reboot(self: *Self) void {
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
@@ -153,6 +160,7 @@ fn reboot(self: *Self) void {
     self.signal(.init);
 }
 
+/// restart will set the game back to the setup phase, using the current Game parameters
 fn restart(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = req;
     self.game_mutex.lock();
@@ -163,7 +171,7 @@ fn restart(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     self.signal(.init);
 }
 
-// clock() function emits an event of type clock with the current elapsed duration
+/// clock() function emits an event of type clock with the current number of remaining seconds until the next expiry time
 fn clock(self: *Self, stream: std.net.Stream) !void {
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
@@ -183,13 +191,14 @@ fn getPlayer(self: *Self, req: *httpz.Request) u8 {
     return std.fmt.parseInt(u8, req.headers.get("x-player") orelse "", 10) catch @as(u8, 0);
 }
 
+/// zeroWing handler to get the background image
 fn zeroWing(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
     res.body = @embedFile("images/zero-wing-gradient.jpg");
 }
 
-// header() GET req returns the title header, depending on the game state
+/// header() GET req returns the title header, depending on the game state
 fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const player = self.getPlayer(req);
     std.log.info("GET /header {} player {}", .{ self.state, player });
@@ -261,6 +270,7 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     }
 }
 
+/// calcBoardClass is used to get the CSS class for the board, based on whether it's this players turn, and what mode they are in
 fn calcBoardClass(self: *Self, player: u8) []const u8 {
     if (player == self.current_player) {
         return switch (self.player_mode) {
@@ -272,6 +282,7 @@ fn calcBoardClass(self: *Self, player: u8) []const u8 {
     return "inactive-player";
 }
 
+/// showBoard writes the current board to the HTTP response, based on the current player and what state they are in
 fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     const w = res.writer();
 
@@ -518,6 +529,8 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     }
 }
 
+/// events GET handler is an SSE stream that emits events whenever the state changes
+/// or a clock event expires. Uses the Game.event_condition to synch with the outer threads
 fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     std.log.info("(event-source) GET /events {}", .{self.state});
     _ = req;
