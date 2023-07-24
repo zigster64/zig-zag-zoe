@@ -43,6 +43,29 @@ pub fn put(self: *Self, x: usize, y: usize, value: u8) Errors.GameError!void {
     self.grid_buffer[o] = value;
 }
 
+pub fn nuke(self: *Self, x: usize, y: usize) Errors.GameError!void {
+    if (x < 0 or y < 0 or x >= self.grid_x or y >= self.grid_y) {
+        return Errors.GameError.InvalidBoardPosition;
+    }
+    std.log.info("dropping a nuke at {},{}", .{ x, y });
+    // nuke this square, and all the adjacent squares
+    self.put(x, y, 0) catch {};
+    self.put(x + 1, y, 0) catch {};
+    self.put(x + 1, y + 1, 0) catch {};
+    self.put(x, y + 1, 0) catch {};
+    if (x > 0) {
+        self.put(x -| 1, y, 0) catch {};
+        self.put(x -| 1, y + 1, 0) catch {};
+    }
+    if (y > 0) {
+        self.put(x, y -| 1, 0) catch {};
+        self.put(x + 1, y -| 1, 0) catch {};
+        if (x > 0) {
+            self.put(x -| 1, y -| 1, 0) catch {};
+        }
+    }
+}
+
 pub fn victory(self: *Self, player: u8, runlength: u8) bool {
     std.log.debug("victory check for player {} with runlength {}", .{ player, runlength });
     var pos: usize = 0;

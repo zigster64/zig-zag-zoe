@@ -21,7 +21,8 @@
 <body hx-ext="sse" sse-connect="/events">
 
     <!-- Add the header, that updates on game state changes -->
-    <div class="header" hx-get="/header" hx-headers='js:{"x-player": getPlayer()}' hx-trigger="load, sse:update"></div>
+    <div class="header" hx-get="/header" hx-headers='js:{"x-player": getPlayer()}' hx-trigger="load, sse:update">
+    </div>
 
 
     <!-- main app widget goes in here -->
@@ -31,10 +32,9 @@
     </div>
 
     <!-- Add the clock in a footer here, connected to the clock event -->
-    <div class="footer">Clock:
+    <div class="footer">
         <span class="clock" sse-swap="clock">
         </span>
-        Seconds
     </div>
 
     <!-- hidden state variables - replace this with a single session-UUID -->

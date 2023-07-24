@@ -5,6 +5,7 @@ const Errors = @import("errors.zig");
 
 const Self = @This();
 
+const countdown_timer: i64 = 30;
 const MAX_PLAYERS = 8;
 
 const State = enum {
@@ -23,8 +24,13 @@ const Event = enum {
     start,
     next,
     victory,
-    failure,
     stalemate,
+};
+
+const PlayerMode = enum {
+    normal,
+    flipper,
+    nuke,
 };
 
 // Game thread control
@@ -37,16 +43,18 @@ grid_x: u8 = 1,
 grid_y: u8 = 1,
 players: u8 = 2,
 needed_to_win: u8 = 3,
-flipper: u8 = 0,
-can_flip: bool = false,
+flipper_chance: u8 = 0,
+nuke_chance: u8 = 0,
+player_mode: PlayerMode = .normal,
 board: Board = undefined,
 logged_in: [MAX_PLAYERS]bool = undefined,
 clocks: [MAX_PLAYERS]i64 = undefined,
 state: State = .init,
 last_event: Event = .none,
-start_time: i64 = undefined,
+expiry_time: i64 = undefined,
 current_player: u8 = 0,
 prng: std.rand.Xoshiro256 = undefined,
+watcher: std.Thread = undefined,
 
 pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8) !Self {
     if (players > 8) {
@@ -63,8 +71,7 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8)
         .grid_y = grid_y,
         .players = players,
         .needed_to_win = needed_to_win,
-        .flipper = flipper,
-        .start_time = std.time.timestamp(),
+        .flipper_chance = flipper,
         .prng = std.rand.DefaultPrng.init(os_seed),
     };
     for (0..MAX_PLAYERS) |i| {
@@ -73,9 +80,42 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8)
     return s;
 }
 
-fn newCanFlip(self: *Self) bool {
-    const x = (self.prng.random().int(u8) % (11)) * 10;
-    return x < self.flipper;
+pub fn startWatcher(self: *Self) !void {
+    self.watcher = try std.Thread.spawn(.{}, Self.watcherThread, .{self});
+    self.watcher.detach();
+}
+
+fn watcherThread(self: *Self) void {
+    while (true) {
+        self.game_mutex.lock();
+        const expiry_time = self.expiry_time;
+        const state = self.state;
+        self.game_mutex.unlock();
+        if (state != .init) {
+            if (std.time.timestamp() > expiry_time) {
+                std.log.debug("Waited too long", .{});
+                if (state == .winner) {
+                    self.reboot();
+                    return;
+                }
+                self.current_player = 100;
+                self.state = .winner;
+                self.signal(.victory);
+            }
+        }
+        std.time.sleep(std.time.ns_per_s);
+    }
+}
+
+fn randPlayerMode(self: *Self) PlayerMode {
+    const dice = (self.prng.random().int(u8) % (11)) * 10;
+    if (dice < self.flipper_chance) {
+        return .flipper;
+    }
+    if (dice < self.nuke_chance) {
+        return .nuke;
+    }
+    return .normal;
 }
 
 pub fn addRoutes(self: *Self, router: anytype) void {
@@ -87,6 +127,7 @@ pub fn addRoutes(self: *Self, router: anytype) void {
     router.post("/login/:player", Self.login); // login !
     router.post("/square/:x/:y", Self.square); // player clicks on a square
     router.post("/restart", Self.restart);
+    router.get("/images/zero-wing.jpg", Self.zeroWing);
 }
 
 /// signal() function transitions the game state to the new state, and signals the event handlers to update
@@ -95,24 +136,45 @@ fn signal(self: *Self, ev: Event) void {
     defer self.event_mutex.unlock();
     self.last_event = ev;
     self.event_condition.broadcast();
+    self.expiry_time = std.time.timestamp() + countdown_timer;
     std.log.info("signal event {}", .{ev});
+}
+
+fn reboot(self: *Self) void {
+    self.game_mutex.lock();
+    defer self.game_mutex.unlock();
+    self.state = .init;
+    self.grid_x = 3;
+    self.grid_y = 3;
+    self.players = 2;
+    self.needed_to_win = 3;
+    self.flipper_chance = 0;
+    self.expiry_time = std.time.timestamp() + 100;
+    self.signal(.init);
 }
 
 fn restart(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = req;
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
     res.body = "restarted";
     self.state = .init;
     self.signal(.init);
 }
 
-// clock() function returns a fragment with the current clock value
+// clock() function emits an event of type clock with the current elapsed duration
 fn clock(self: *Self, stream: std.net.Stream) !void {
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
-    try stream.writeAll("event: clock\n");
-    try stream.writer().print("data: {d}\n\n", .{std.time.timestamp() - self.start_time});
+    const w = stream.writer();
+    try w.writeAll("event: clock\n");
+    var remaining = self.expiry_time - std.time.timestamp();
+    if (self.state == .running and remaining > 0) {
+        try stream.writer().print("data: {d} seconds remaining ...\n\n", .{self.expiry_time - std.time.timestamp()});
+    } else {
+        try w.writeAll("data: 🕑\n\n");
+    }
 }
 
 /// getPlayer is a utility function to extract the player ID from the request header
@@ -121,12 +183,19 @@ fn getPlayer(self: *Self, req: *httpz.Request) u8 {
     return std.fmt.parseInt(u8, req.headers.get("x-player") orelse "", 10) catch @as(u8, 0);
 }
 
+fn zeroWing(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = self;
+    _ = req;
+    res.body = @embedFile("images/zero-wing-gradient.jpg");
+}
+
 // header() GET req returns the title header, depending on the game state
 fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const player = self.getPlayer(req);
     std.log.info("GET /header {} player {}", .{ self.state, player });
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
     switch (self.state) {
         .init => {
             res.body = @embedFile("html/header/init.html");
@@ -160,6 +229,7 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
     switch (self.state) {
         .init => {
             const w = res.writer();
@@ -168,7 +238,8 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
                 .y = self.grid_y,
                 .players = self.players,
                 .win = self.needed_to_win,
-                .flipper = self.flipper,
+                .flipper = self.flipper_chance,
+                .nuke = self.nuke_chance,
             });
         },
         .login => {
@@ -192,16 +263,18 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
 fn calcBoardClass(self: *Self, player: u8) []const u8 {
     if (player == self.current_player) {
-        if (self.can_flip) {
-            return "active-player-flip";
-        }
-        return "active-player";
+        return switch (self.player_mode) {
+            .normal => "active-player",
+            .flipper => "active-player-flip",
+            .nuke => "active-player-nuke",
+        };
     }
     return "inactive-player";
 }
 
 fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     const w = res.writer();
+
     try w.print(@embedFile("html/board/start-grid.x.html"), .{
         .class = self.calcBoardClass(player),
         .columns = self.grid_x,
@@ -213,7 +286,7 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
 
             // used square that we cant normally click on
             if (value != 0) {
-                if (self.can_flip and self.state == .running and player == self.current_player) {
+                if (self.player_mode == .flipper and self.state == .running and player == self.current_player) {
                     // BUT ! we have flipper powers this turn, so we can change another player's piece to our piece !
                     try w.print(@embedFile("html/board/clickable-square.x.html"), .{
                         .class = "grid-square-clickable",
@@ -251,6 +324,14 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     }
 
     try w.writeAll(@embedFile("html/board/end-grid.html"));
+
+    if (self.current_player == player) {
+        switch (self.player_mode) {
+            .normal => try w.writeAll(@embedFile("html/board/your-move.html")),
+            .flipper => try w.writeAll(@embedFile("html/board/zero-wing-enabled.html")),
+            .nuke => try w.writeAll(@embedFile("html/board/setup-us-the-bomb.html")),
+        }
+    }
 
     return;
 }
@@ -290,6 +371,7 @@ fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
     const player_value = req.param("player").?;
     const player = try std.fmt.parseInt(u8, player_value, 10);
 
@@ -320,7 +402,7 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     if (all_logged_in) {
         self.state = .running;
         self.current_player = 1;
-        self.start_time = std.time.timestamp();
+        self.expiry_time = std.time.timestamp() + countdown_timer;
         self.signal(.start);
     } else {
         self.signal(.login);
@@ -354,6 +436,9 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         return;
     }
     std.log.debug("board.put {},{} = {}", .{ x, y, player });
+    if (self.player_mode == .nuke) {
+        try self.board.nuke(x - 1, y - 1);
+    }
     try self.board.put(x - 1, y - 1, player);
 
     if (self.board.victory(self.current_player, self.needed_to_win)) {
@@ -377,7 +462,8 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         self.current_player = 1;
     }
 
-    self.can_flip = self.newCanFlip();
+    // end of turn
+    self.player_mode = self.randPlayerMode();
     self.signal(.next);
 }
 
@@ -386,12 +472,14 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = res;
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
     const SetupRequest = struct {
         x: u8,
         y: u8,
         players: u8,
         win: u8,
         flipper: u8,
+        nuke: u8,
     };
 
     // sanity check the inputs !
@@ -416,9 +504,10 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         self.grid_y = setup_request.y;
         self.players = setup_request.players;
         self.needed_to_win = setup_request.win;
-        self.flipper = setup_request.flipper;
+        self.flipper_chance = setup_request.flipper;
+        self.nuke_chance = setup_request.nuke;
 
-        self.can_flip = self.newCanFlip();
+        self.player_mode = self.randPlayerMode();
 
         self.board = try Board.init(self.grid_x, self.grid_y);
         for (0..MAX_PLAYERS) |i| {
@@ -444,11 +533,13 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     defer self.event_mutex.unlock();
 
     while (true) {
-        // work out how long until the clock gets to the next 10s mark
-        const seconds_since_last_tenner: u64 = @intCast(@mod(std.time.timestamp() - self.start_time, 10));
-        const next_clock = std.time.ns_per_s * (10 -| seconds_since_last_tenner);
+        var next_clock: u64 = switch (self.state) {
+            .running, .winner, .stalemate => 1,
+            .login => 30,
+            .init => 60,
+        };
 
-        self.event_condition.timedWait(&self.event_mutex, next_clock) catch |err| {
+        self.event_condition.timedWait(&self.event_mutex, std.time.ns_per_s * next_clock) catch |err| {
             if (err == error.Timeout) {
                 try self.clock(stream);
                 continue;

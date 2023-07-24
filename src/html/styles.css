@@ -8,6 +8,13 @@ body {
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
+  height: 100%;
+  width: 100%;
+  background-image: url("images/zero-wing.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
 }
 
 .clock {
@@ -60,6 +67,12 @@ body {
   transition: all ease-in 1s ;
 }
 
+.active-player-nuke {
+  background-color: #FF0000;
+  padding: 8px;
+  transition: all ease-in 1s ;
+}
+
 .inactive-player {
   background-color: #217683;
   padding: 8px;
@@ -76,6 +89,10 @@ body {
 
 .yellow {
     color: wheat;
+}
+
+.small {
+    font-size: 18px;
 }
 
 .red-button {

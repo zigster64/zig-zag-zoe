@@ -27,7 +27,13 @@
         <input type="range" id="win" name="flipper" value="{[flipper]}" min="0" max="100" step="10"
             oninput="document.getElementById('flipper-value').textContent = this.value">
         <span id="flipper-value">{[flipper]}</span>
-        <label for="flipper">% Chance of a Flipper ?</label>
+        <label for="flipper">% Chance of a Zero Wing ?</label>
+    </div>
+    <div>
+        <input type="range" id="nuke" name="nuke" value="{[nuke]}" min="0" max="100" step="10"
+            oninput="document.getElementById('nuke-value').textContent = this.value">
+        <span id="nuke-value">{[nuke]}</span>
+        <label for="nuke">% Chance to set us up the Bomb ?</label>
     </div>
     <button class="green-button">Start</button>
 </form>

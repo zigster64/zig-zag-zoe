@@ -10,8 +10,6 @@ pub fn usage() void {
 pub fn main() !void {
     var port: u16 = 3000;
 
-    std.debug.print("main and async is {}\n", .{std.io.is_async});
-
     var env_port = std.os.getenv("PORT");
     if (env_port != null and env_port.?.len > 0) {
         port = try std.fmt.parseInt(u16, env_port.?, 10);
@@ -52,6 +50,7 @@ pub fn main() !void {
     var flipper: u8 = 0;
 
     var game = try Game.init(grid_x, grid_y, players, win, flipper);
+    try game.startWatcher();
 
     var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{
         .address = "0.0.0.0",
