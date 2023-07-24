@@ -1,4 +1,6 @@
 
+# TODO - this doc is a bit out of date.  Delete it or rewrite it ....
+
 # Game States
 
 - (event-source) GET /game ... SSE link that returns the following event types
