@@ -22,7 +22,7 @@ docker-build:
 	docker build -t zig-zag-zoe -f Docker/Dockerfile .
 
 docker-run:
-	docker run -it -e PORT=8080 -p 8080:8080 zig-zag-zoe:latest
+	docker run -it -e PORT=8080 -p 8080:3000 zig-zag-zoe:latest
 
 docker-push:
 	docker tag zig-zag-zoe ${DOCKER_REGISTRY}/zig-zag-zoe:latest
