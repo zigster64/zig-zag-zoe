@@ -27,3 +27,8 @@ docker-run:
 docker-push:
 	docker tag zig-zag-zoe ${DOCKER_REGISTRY}/zig-zag-zoe:latest
 	docker push ${DOCKER_REGISTRY}/zig-zag-zoe:latest
+
+ecs-service-restart:
+	aws ecs update-service --profile ${AWS_PROFILE} --cluster zig-zag-zoe --service zig-zag-zoe-service --task-definition zig-zag-zoe-task
+
+build-and-launch: docker-build docker-push ecs-service-restart
