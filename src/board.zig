@@ -39,7 +39,7 @@ pub fn put(self: *Self, x: usize, y: usize, value: u8) Errors.GameError!void {
         return Errors.GameError.InvalidBoardPosition;
     }
     const o = self.offset(x, y);
-    std.log.info("doing a put at {},{}:{} -> {}", .{ x, y, o, value });
+    std.log.debug("doing a put at {},{}:{} -> {}", .{ x, y, o, value });
     self.grid_buffer[o] = value;
 }
 
@@ -47,7 +47,7 @@ pub fn nuke(self: *Self, x: usize, y: usize) Errors.GameError!void {
     if (x < 0 or y < 0 or x >= self.grid_x or y >= self.grid_y) {
         return Errors.GameError.InvalidBoardPosition;
     }
-    std.log.info("dropping a nuke at {},{}", .{ x, y });
+    std.log.debug("dropping a nuke at {},{}", .{ x, y });
     // nuke this square, and all the adjacent squares
     self.put(x, y, 0) catch {};
     self.put(x + 1, y, 0) catch {};

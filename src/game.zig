@@ -92,11 +92,12 @@ pub fn startWatcher(self: *Self) !void {
 fn watcherThread(self: *Self) void {
     while (true) {
         self.game_mutex.lock();
-        const expiry_time = self.expiry_time;
+        var expiry_time = self.expiry_time;
         const state = self.state;
         self.game_mutex.unlock();
 
         if (state != .init) {
+        std.log.info("is {} > {}", .{std.time.timestamp(), expiry_time});
             if (std.time.timestamp() > expiry_time) {
                 std.log.debug("Waited too long", .{});
                 if (state == .winner) {
@@ -177,6 +178,8 @@ fn restart(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     res.body = "restarted";
     self.state = .init;
+    self.countdown_timer = start_countdown_timer;
+    self.expiry_time = std.time.timestamp() + 100;
     self.signal(.init);
 }
 
@@ -424,6 +427,7 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         self.state = .running;
         self.current_player = 1;
         self.expiry_time = std.time.timestamp() + start_countdown_timer;
+        self.countdown_timer = start_countdown_timer;
         self.signal(.start);
     } else {
         self.signal(.login);
@@ -485,7 +489,9 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     // end of turn
     self.player_mode = self.randPlayerMode();
-    self.countdown_timer -= 1;
+    if (self.countdown_timer > 1) {
+        self.countdown_timer -= 1;
+    }
     self.signal(.next);
 }
 
@@ -506,7 +512,7 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     // sanity check the inputs !
     if (try req.json(SetupRequest)) |setup_request| {
-        // std.log.info("POST /setup {} {}", .{ self.state, setup_request });
+        std.log.info("POST /setup {} {}", .{ self.state, setup_request });
         if (setup_request.x * setup_request.y > 144) {
             return Errors.GameError.GridTooBig;
         }
@@ -553,14 +559,8 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     try stream.writer().print("event: update\ndata: {s}\n\n", .{@tagName(self.last_event)});
 
     // aquire a lock on the event_mutex
-    std.log.info("locking event mutex", .{});
     self.event_mutex.lock();
-    std.log.info("event mutex locked", .{});
-    defer {
-                            std.log.info("unlocking event mutex", .{});
-                            self.event_mutex.unlock();
-                            std.log.info("event mutex unlocked", .{});
-    }
+    defer self.event_mutex.unlock();
 
     while (true) {
         var next_clock: u64 = switch (self.state) {
@@ -583,9 +583,7 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         // so we check the current event state of the Game, and emit an SSE event to output the
         // current state to the client
         {
-            std.log.info("got an event, so locking the game mutex to read the event", .{});
             self.game_mutex.lock();
-            std.log.info("locked ok", .{});
             defer self.game_mutex.unlock();
             std.log.debug("condition fired - last event is {}", .{self.last_event});
             try stream.writer().print("event: update\ndata: {s}\n\n", .{@tagName(self.last_event)});
