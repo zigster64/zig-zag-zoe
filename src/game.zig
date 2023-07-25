@@ -3,9 +3,9 @@ const httpz = @import("httpz");
 const Board = @import("board.zig");
 const Errors = @import("errors.zig");
 
+const start_countdown_timer: i64 = 30;
 const Self = @This();
 
-const countdown_timer: i64 = 30;
 const MAX_PLAYERS = 8;
 
 const State = enum {
@@ -48,13 +48,13 @@ nuke_chance: u8 = 0,
 player_mode: PlayerMode = .normal,
 board: Board = undefined,
 logged_in: [MAX_PLAYERS]bool = undefined,
-clocks: [MAX_PLAYERS]i64 = undefined,
 state: State = .init,
 last_event: Event = .none,
 expiry_time: i64 = undefined,
 current_player: u8 = 0,
 prng: std.rand.Xoshiro256 = undefined,
 watcher: std.Thread = undefined,
+countdown_timer: i64 = start_countdown_timer,
 
 /// init returns a new Game object
 pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8) !Self {
@@ -74,6 +74,7 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8)
         .needed_to_win = needed_to_win,
         .flipper_chance = flipper,
         .prng = std.rand.DefaultPrng.init(os_seed),
+        .countdown_timer = start_countdown_timer,
     };
     for (0..MAX_PLAYERS) |i| {
         s.logged_in[i] = false;
@@ -94,6 +95,7 @@ fn watcherThread(self: *Self) void {
         const expiry_time = self.expiry_time;
         const state = self.state;
         self.game_mutex.unlock();
+
         if (state != .init) {
             if (std.time.timestamp() > expiry_time) {
                 std.log.debug("Waited too long", .{});
@@ -101,9 +103,12 @@ fn watcherThread(self: *Self) void {
                     self.reboot();
                     return;
                 }
+
+                self.game_mutex.lock();
                 self.current_player = 100;
                 self.state = .winner;
                 self.signal(.victory);
+                self.game_mutex.unlock();
             }
         }
         std.time.sleep(std.time.ns_per_s);
@@ -137,12 +142,15 @@ pub fn addRoutes(self: *Self, router: anytype) void {
 }
 
 /// signal() function transitions the game state to the new state, and signals the event handlers to update
+// you must have the game_mutex locked already when you call signal()
 fn signal(self: *Self, ev: Event) void {
+    // locks the event_mutex (not the game_mutex) - so that it can broadcast all event threads
     self.event_mutex.lock();
-    defer self.event_mutex.unlock();
     self.last_event = ev;
+    self.expiry_time = std.time.timestamp() + self.countdown_timer;
     self.event_condition.broadcast();
-    self.expiry_time = std.time.timestamp() + countdown_timer;
+    self.event_mutex.unlock();
+
     std.log.info("signal event {}", .{ev});
 }
 
@@ -150,6 +158,7 @@ fn signal(self: *Self, ev: Event) void {
 fn reboot(self: *Self) void {
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
     self.state = .init;
     self.grid_x = 3;
     self.grid_y = 3;
@@ -175,6 +184,7 @@ fn restart(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 fn clock(self: *Self, stream: std.net.Stream) !void {
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
     const w = stream.writer();
     try w.writeAll("event: clock\n");
     var remaining = self.expiry_time - std.time.timestamp();
@@ -200,10 +210,11 @@ fn zeroWing(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
 /// header() GET req returns the title header, depending on the game state
 fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
-    const player = self.getPlayer(req);
-    std.log.info("GET /header {} player {}", .{ self.state, player });
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
+    const player = self.getPlayer(req);
+    std.log.info("GET /header {} player {}", .{ self.state, player });
 
     switch (self.state) {
         .init => {
@@ -233,11 +244,11 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
 /// app()  GET req returns the main app body, depending on the current state of the game, and the player
 fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
-    const player = self.getPlayer(req);
-    std.log.info("GET /app {} player {}", .{ self.state, player });
-
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
+    const player = self.getPlayer(req);
+    std.log.info("GET /app {} player {}", .{ self.state, player });
 
     switch (self.state) {
         .init => {
@@ -397,7 +408,6 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         res.body = "That player is already logged in";
     }
     self.logged_in[player - 1] = true;
-    self.clocks[player - 1] = std.time.timestamp();
     std.log.info("Player {} now logged in", .{player});
     try res.writer().print("{}", .{player});
 
@@ -413,7 +423,7 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     if (all_logged_in) {
         self.state = .running;
         self.current_player = 1;
-        self.expiry_time = std.time.timestamp() + countdown_timer;
+        self.expiry_time = std.time.timestamp() + start_countdown_timer;
         self.signal(.start);
     } else {
         self.signal(.login);
@@ -475,6 +485,7 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     // end of turn
     self.player_mode = self.randPlayerMode();
+    self.countdown_timer -= 1;
     self.signal(.next);
 }
 
@@ -542,8 +553,14 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     try stream.writer().print("event: update\ndata: {s}\n\n", .{@tagName(self.last_event)});
 
     // aquire a lock on the event_mutex
+    std.log.info("locking event mutex", .{});
     self.event_mutex.lock();
-    defer self.event_mutex.unlock();
+    std.log.info("event mutex locked", .{});
+    defer {
+                            std.log.info("unlocking event mutex", .{});
+                            self.event_mutex.unlock();
+                            std.log.info("event mutex unlocked", .{});
+    }
 
     while (true) {
         var next_clock: u64 = switch (self.state) {
@@ -566,9 +583,11 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         // so we check the current event state of the Game, and emit an SSE event to output the
         // current state to the client
         {
-            std.log.debug("condition fired - last event is {}", .{self.last_event});
+            std.log.info("got an event, so locking the game mutex to read the event", .{});
             self.game_mutex.lock();
+            std.log.info("locked ok", .{});
             defer self.game_mutex.unlock();
+            std.log.debug("condition fired - last event is {}", .{self.last_event});
             try stream.writer().print("event: update\ndata: {s}\n\n", .{@tagName(self.last_event)});
         }
     }

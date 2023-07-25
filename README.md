@@ -87,11 +87,10 @@ after someone set us up the bomb.
 
 ## Bug 2
 
-There is another bug somewhere, where the browser client can get stuck in a state where its missing the event updates. Only happens
-if you do bad things like hack the HTML in dev tools in the browser, or restart the backend with an updated version, whilst the
-frontend is still running an older version, and hasnt refreshed.
+There is another bug somewhere, where closing a browser that it connected to an event stream, then re-opening another one, will 
+deadlock the event thread in the server. I think this is whats happening, but not sure. Needs some time to play with it / prove it / fix it.
 
-Not sure, but there are ways of breaking it. Would like to fix these.
+Only happens every now and then, cant reproduce it yet. Other than that, the thread locking seems pretty robust so far.
 
 ## More Modes and Gameplay ideas
 
