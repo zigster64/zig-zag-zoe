@@ -13,7 +13,7 @@ run:
 run-fast:
 	zig build -Doptimize=ReleaseFast run
 
-docker: docker-build
+docker: docker-build docker-push
 
 docker-build:
 	zig build -Dtarget=aarch64-linux-musl -Doptimize=ReleaseFast
