@@ -46,6 +46,12 @@
     </div>
 
     <script>
+        let yourTurnAudio = new Audio("audio/your-turn.mp3")
+        let zeroWingAudio = new Audio("audio/zero-wing.mp3")
+        let nukeAudio = new Audio("audio/nuke.mp3")
+        let victorAudio = new Audio("audio/victory.mp3")
+        let lostAudio = new Audio("audio/lost.mp3")
+
         // Just some minimal vanilla-JS to add a couple of helper functions
         function getPlayer() {
             const p = parseInt(document.getElementById("player").innerText);

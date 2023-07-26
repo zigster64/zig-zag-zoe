@@ -97,7 +97,6 @@ fn watcherThread(self: *Self) void {
         self.game_mutex.unlock();
 
         if (state != .init) {
-        std.log.info("is {} > {}", .{std.time.timestamp(), expiry_time});
             if (std.time.timestamp() > expiry_time) {
                 std.log.debug("Waited too long", .{});
                 if (state == .winner) {
@@ -140,6 +139,12 @@ pub fn addRoutes(self: *Self, router: anytype) void {
     router.post("/square/:x/:y", Self.square); // player clicks on a square
     router.post("/restart", Self.restart);
     router.get("/images/zero-wing.jpg", Self.zeroWing);
+
+    router.get("/audio/your-turn.mp3", Self.yourTurnAudio);
+    router.get("/audio/zero-wing.mp3", Self.zeroWingAudio);
+    router.get("/audio/nuke.mp3", Self.nukeAudio);
+    router.get("/audio/victory.mp3", Self.victoryAudio);
+    router.get("/audio/lost.mp3", Self.lostAudio);
 }
 
 /// signal() function transitions the game state to the new state, and signals the event handlers to update
@@ -211,6 +216,48 @@ fn zeroWing(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     res.body = @embedFile("images/zero-wing-gradient.jpg");
 }
 
+fn yourTurnAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = self;
+    _ = req;
+    res.body = @embedFile("audio/your-turn.mp3");
+}
+
+fn zeroWingAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = self;
+    _ = req;
+    res.body = @embedFile("audio/zero-wing.mp3");
+}
+
+fn nukeAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = self;
+    _ = req;
+    res.body = @embedFile("audio/nuke.mp3");
+}
+
+fn victoryAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = self;
+    _ = req;
+    res.body = @embedFile("audio/victory.mp3");
+}
+
+fn lostAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = self;
+    _ = req;
+    res.body = @embedFile("audio/lost.mp3");
+}
+
+/// calcAudio calculates the name of the audio element that matches the current user state
+fn calcAudio(self: *Self, player: u8) []const u8 {
+    if (player == self.current_player) {
+        return switch (self.player_mode) {
+            .normal => "<script>yourTurnAudio.play()</script>",
+            .flipper => "<script>zeroWingAudio.play()</script>",
+            .nuke => "<script>nukeAudio.play()</script>",
+        };
+    }
+    return "";
+}
+
 /// header() GET req returns the title header, depending on the game state
 fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     self.game_mutex.lock();
@@ -230,6 +277,7 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
             const w = res.writer();
             try w.print(@embedFile("html/header/running.x.html"), .{
                 .current_player = self.current_player,
+                .audio = self.calcAudio(player),
             });
         },
         .winner => {
