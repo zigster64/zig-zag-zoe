@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 
 <head>
@@ -9,7 +10,7 @@
     <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 
-    <meta name="app-version" content="20230726.1" desc="now with audio">
+    <meta name="app-version" content="20230727.1" desc="fixed safari audio">
 
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,12 +46,17 @@
         Player <span id="player" hx-swap-oob="true">
     </div>
 
+    <div>
+        <input class="blue-button" type="button" value="Enable Audio" onclick="yourTurnAudio.play()">
+    </div>
+
     <script>
-        let yourTurnAudio = new Audio("audio/your-turn.mp3")
-        let zeroWingAudio = new Audio("audio/zero-wing.mp3")
-        let nukeAudio = new Audio("audio/nuke.mp3")
-        let victorAudio = new Audio("audio/victory.mp3")
-        let lostAudio = new Audio("audio/lost.mp3")
+        // define some audio snippets
+        const yourTurnAudio = new Audio("audio/your-turn.mp3")
+        const zeroWingAudio = new Audio("audio/zero-wing.mp3")
+        const nukeAudio = new Audio("audio/nuke.mp3")
+        const victoryAudio = new Audio("audio/victory.mp3")
+        const lostAudio = new Audio("audio/lost.mp3")
 
         // Just some minimal vanilla-JS to add a couple of helper functions
         function getPlayer() {

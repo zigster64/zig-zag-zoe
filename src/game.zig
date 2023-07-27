@@ -4,6 +4,9 @@ const Board = @import("board.zig");
 const Errors = @import("errors.zig");
 
 const start_countdown_timer: i64 = 30;
+const initial_countdown_timer: i64 = 120;
+const all_players: u8 = 100;
+
 const Self = @This();
 
 const MAX_PLAYERS = 8;
@@ -105,8 +108,9 @@ fn watcherThread(self: *Self) void {
                 }
 
                 self.game_mutex.lock();
-                self.current_player = 100;
+                self.current_player = all_players;
                 self.state = .winner;
+                self.expiry_time = std.time.timestamp() + start_countdown_timer;
                 self.signal(.victory);
                 self.game_mutex.unlock();
             }
@@ -153,7 +157,10 @@ fn signal(self: *Self, ev: Event) void {
     // locks the event_mutex (not the game_mutex) - so that it can broadcast all event threads
     self.event_mutex.lock();
     self.last_event = ev;
-    self.expiry_time = std.time.timestamp() + self.countdown_timer;
+    const new_expiry_time = std.time.timestamp() + self.countdown_timer;
+    if (self.expiry_time < new_expiry_time) {
+        self.expiry_time = new_expiry_time;
+    }
     self.event_condition.broadcast();
     self.event_mutex.unlock();
 
@@ -171,7 +178,7 @@ fn reboot(self: *Self) void {
     self.players = 2;
     self.needed_to_win = 3;
     self.flipper_chance = 0;
-    self.expiry_time = std.time.timestamp() + 100;
+    self.expiry_time = std.time.timestamp() + initial_countdown_timer;
     self.signal(.init);
 }
 
@@ -184,7 +191,7 @@ fn restart(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     res.body = "restarted";
     self.state = .init;
     self.countdown_timer = start_countdown_timer;
-    self.expiry_time = std.time.timestamp() + 100;
+    self.expiry_time = std.time.timestamp() + initial_countdown_timer;
     self.signal(.init);
 }
 
@@ -197,7 +204,7 @@ fn clock(self: *Self, stream: std.net.Stream) !void {
     try w.writeAll("event: clock\n");
     var remaining = self.expiry_time - std.time.timestamp();
     if (self.state == .running and remaining > 0) {
-        try stream.writer().print("data: {d} seconds remaining ...\n\n", .{self.expiry_time - std.time.timestamp()});
+        try stream.writer().print("data: {d} seconds remaining ...\n\n", .{remaining});
     } else {
         try w.writeAll("data: 🕑\n\n");
     }
@@ -219,30 +226,35 @@ fn zeroWing(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 fn yourTurnAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
+    res.header("Content-Type", "audio/mpeg");
     res.body = @embedFile("audio/your-turn.mp3");
 }
 
 fn zeroWingAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
+    res.header("Content-Type", "audio/mpeg");
     res.body = @embedFile("audio/zero-wing.mp3");
 }
 
 fn nukeAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
+    res.header("Content-Type", "audio/mpeg");
     res.body = @embedFile("audio/nuke.mp3");
 }
 
 fn victoryAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
+    res.header("Content-Type", "audio/mpeg");
     res.body = @embedFile("audio/victory.mp3");
 }
 
 fn lostAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
+    res.header("Content-Type", "audio/mpeg");
     res.body = @embedFile("audio/lost.mp3");
 }
 
