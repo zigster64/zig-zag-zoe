@@ -65,10 +65,12 @@ Each player takes a turn, selecting an empty square to place their piece in.
 
 IF a player gets X in a row (where X == the number of squares needed to win), then they win, and everyone else loses !
 
+If a player wins, then all the base are belong to them.
+
 ## Zero Wing Enabled
 
 Each turn, a player may randomly get Zero Wing Enabled. In this mode, the border of the board is printed in orange, and they can click on ANY square 
-(including both empty squares AND squares that has another players piece already), and it is changed to their piece.
+including both empty squares AND squares that has another players piece already ... and the square is changed to their piece.
 
 ## Set us up the Bomb
 
@@ -85,12 +87,7 @@ seems to zap 1 other adjacent square.  Maybe. Cant reproduce it yet.
 I will either fix this bug, or leave it in there as a feature - rationale is that there might be some bomb residue laying around
 after someone set us up the bomb.
 
-## Bug 2
-
-There is another bug somewhere, where closing a browser that it connected to an event stream, then re-opening another one, will 
-deadlock the event thread in the server. I think this is whats happening, but not sure. Needs some time to play with it / prove it / fix it.
-
-Only happens every now and then, cant reproduce it yet. Other than that, the thread locking seems pretty robust so far.
+Havent seen it happen lately, but then I havent changed anything to fix it either .... so who knows ?
 
 ## More Modes and Gameplay ideas
 
@@ -109,18 +106,18 @@ Thinking up some new random modes to add to make the game harder - ideas most we
 
 This code is interesting for the following reasons :
 
-- Its all written in Zig
+- Its all written in Zig. Fast / Safe / Easy to read - pick all 3.
 - It uses the excellent http.zig library https://github.com/karlseguin/http.zig
 - Generated docker image = 770Kb (compressed) All it has is the compiled executable (2.5MB), which includes all bundled assets in the single file binary
 - Run stats - uses about 60MB RAM and really low CPU %
 - Its about as simple as doing the same thing in Go, there is really nothing too nasty required in the code.  
 - The router, and all the HTML contents is part of the Game object ... the implications of this are that it is possible to create 'web components' using this
 zig/htmx approach that are all self contained, and can be imported into other projects, without having to know about connecting up routes, or pulling in content. Interesting.
-- Uses SSE / Event Streams to keep it all realtime updates with pub/sub from multiple players. Is simple, and it works.
+- Uses SSE / Event Streams to keep it all realtime with pub/sub updates for multiple players. Is simple, and it works, and requires not much code at all.
 - Demonstrates how to do threading, thread conditions / signalling, and using mutexes to make object updates thread safe.
 - No websockets needed
 - There is pretty much NO JAVASCRIPT on the frontend. It uses HTMX https://htmx.org ... which is an alternative approach to web clients, where the frontend is pure hypertext, and everything is done on the backend
-- There is a tiny bit of JS, to update the session ID, but im still thinking up a way of getting rid of that as well.
+- There is a tiny bit of JS, to play some audio, and to update the session ID, but im still thinking up a way of getting rid of that as well.
 - Uses std.fmt.print() as the templating engine.  I didnt know before, but you can use named tags inside the comptime format string, and use those to reference fields in the args param. 
 Actually makes for a half decent templating tool, without having to find and import a templating lib.
 
