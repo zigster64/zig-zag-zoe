@@ -98,13 +98,14 @@ fn watcherThread(self: *Self) void {
         var expiry_time = self.expiry_time;
         const state = self.state;
         self.game_mutex.unlock();
+        const t = std.time.timestamp();
 
         if (state != .init) {
-            if (std.time.timestamp() > expiry_time) {
+            if (t > expiry_time) {
                 std.log.debug("Waited too long", .{});
                 if (state == .winner) {
                     self.reboot();
-                    return;
+                    continue;
                 }
 
                 self.game_mutex.lock();
@@ -205,8 +206,8 @@ fn clock(self: *Self, stream: std.net.Stream) !void {
     var remaining = self.expiry_time - std.time.timestamp();
     if (self.state == .running and remaining > 0) {
         try stream.writer().print("data: {d} seconds remaining ...\n\n", .{remaining});
-    } else {
-        try w.writeAll("data: 🕑\n\n");
+    // } else {
+        // try w.writeAll("data: 🕑\n\n");
     }
 }
 
