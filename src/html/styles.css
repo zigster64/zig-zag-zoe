@@ -172,10 +172,13 @@ body {
     border-radius: 10px;
     background-image: linear-gradient(to top left, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2) 30%, rgba(0, 0, 0, 0));
     box-shadow: inset 2px 2px 3px rgba(255, 255, 255, 0.6), inset -2px -2px 3px rgba(0, 0, 0, 0.6);
+    border-color: rgba(0,0,0,0);
+    border: 4px;
 }
 
 .login-button:hover {
-    background-image: linear-gradient(to top left, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) 30%, rgba(0, 0, 0, 0.5));
+    background-image: linear-gradient(to top left, rgba(200, 200, 200, 0.4), rgba(200, 200, 200, 0.8) 30%, rgba(200, 200, 200, 0.7));
+    border-color: yellow;
 }
 
 .login-button:active {

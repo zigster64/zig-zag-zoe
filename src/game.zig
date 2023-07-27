@@ -2,6 +2,7 @@ const std = @import("std");
 const httpz = @import("httpz");
 const Board = @import("board.zig");
 const Errors = @import("errors.zig");
+const uuid = @import("uuid.zig");
 
 const start_countdown_timer: i64 = 30;
 const initial_countdown_timer: i64 = 120;
@@ -50,7 +51,7 @@ flipper_chance: u8 = 0,
 nuke_chance: u8 = 0,
 player_mode: PlayerMode = .normal,
 board: Board = undefined,
-logged_in: [MAX_PLAYERS]bool = undefined,
+logged_in: [MAX_PLAYERS]uuid.UUID = undefined,
 state: State = .init,
 last_event: Event = .none,
 expiry_time: i64 = undefined,
@@ -79,10 +80,15 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8)
         .prng = std.rand.DefaultPrng.init(os_seed),
         .countdown_timer = start_countdown_timer,
     };
-    for (0..MAX_PLAYERS) |i| {
-        s.logged_in[i] = false;
-    }
+    s.zapLogins();
     return s;
+}
+
+/// zayLogins clears the logins array
+fn zapLogins(self: *Self) void {
+    for (0..MAX_PLAYERS) |i| {
+        self.logged_in[i] = uuid.zero;
+    }
 }
 
 /// startWatcher starts a thread to watch a given game
@@ -120,14 +126,21 @@ fn watcherThread(self: *Self) void {
     }
 }
 
+/// d10 rolls a 10 sided dice
+fn d10(self: *Self) u8 {
+    return (self.prng.random().int(u8) % (11)) * 10;
+}
+
 /// randPlayerMode will return a newly generated mode base of the % chance of things in the current game settings.
 /// use this to get a random mode for the next player's turn at the end of the turn.
 fn randPlayerMode(self: *Self) PlayerMode {
-    const dice = (self.prng.random().int(u8) % (11)) * 10;
-    if (dice < self.flipper_chance) {
+    // roll a dice for the zero wing
+    if (self.d10() < self.flipper_chance) {
         return .flipper;
     }
-    if (dice < self.nuke_chance) {
+
+    // roll a new dice for the bomb
+    if (self.d10() < self.nuke_chance) {
         return .nuke;
     }
     return .normal;
@@ -180,6 +193,7 @@ fn reboot(self: *Self) void {
     self.needed_to_win = 3;
     self.flipper_chance = 0;
     self.expiry_time = std.time.timestamp() + initial_countdown_timer;
+    self.zapLogins();
     self.signal(.init);
 }
 
@@ -193,6 +207,7 @@ fn restart(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     self.state = .init;
     self.countdown_timer = start_countdown_timer;
     self.expiry_time = std.time.timestamp() + initial_countdown_timer;
+    self.zapLogins();
     self.signal(.init);
 }
 
@@ -206,15 +221,25 @@ fn clock(self: *Self, stream: std.net.Stream) !void {
     var remaining = self.expiry_time - std.time.timestamp();
     if (self.state == .running and remaining > 0) {
         try stream.writer().print("data: {d} seconds remaining ...\n\n", .{remaining});
-    // } else {
+        // } else {
         // try w.writeAll("data: 🕑\n\n");
     }
 }
 
 /// getPlayer is a utility function to extract the player ID from the request header
+// the X-PLAYER header is passed as a UUID, which we decode into a player ID 1-MAX_PLAYERS
 fn getPlayer(self: *Self, req: *httpz.Request) u8 {
-    _ = self;
-    return std.fmt.parseInt(u8, req.headers.get("x-player") orelse "", 10) catch @as(u8, 0);
+    const none: u8 = 0;
+    const player_uuid_string = req.headers.get("x-player") orelse return none;
+    const player_uuid = uuid.UUID.parse(player_uuid_string) catch return none;
+    if (player_uuid.match(uuid.zero)) return none;
+
+    for (0..MAX_PLAYERS) |p| {
+        if (player_uuid.match(self.logged_in[p])) {
+            return @intCast(p + 1);
+        }
+    }
+    return 0;
 }
 
 /// zeroWing handler to get the background image
@@ -422,6 +447,11 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     return;
 }
 
+fn isLoggedIn(self: *Self, player: usize) bool {
+    if (player < 1 or player > MAX_PLAYERS) return false;
+    return !uuid.zero.match(self.logged_in[player - 1]);
+}
+
 // loginForm() handler returns either a login form, or a display of who we are waiting for if the user is logged in
 fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const w = res.writer();
@@ -430,22 +460,25 @@ fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     if (player > 0) {
         try w.writeAll(@embedFile("html/login/waiting-title.html"));
         for (0..self.players) |p| {
-            if (!self.logged_in[p]) {
+            if (!self.isLoggedIn(p + 1)) {
                 try w.print(@embedFile("html/login/waiting-player.x.html"), .{
                     .player = p + 1,
                 });
             }
         }
         try w.writeAll(@embedFile("html/login/waiting-end.html"));
+        // try w.print(@embedFile("html/login/set-player.x.html"), .{
+        //     .player_uuid = self.logged_in[player],
+        // });
         return;
     }
 
     try w.writeAll(@embedFile("html/login/login-form-start.html"));
 
-    for (0..self.players) |i| {
-        if (!self.logged_in[i]) {
+    for (0..self.players) |p| {
+        if (!self.isLoggedIn(p + 1)) {
             try w.print(@embedFile("html/login/login-form-select-player.x.html"), .{
-                .player = i + 1,
+                .player = p + 1,
             });
         }
     }
@@ -467,19 +500,20 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         res.body = "Invalid Player";
         return;
     }
-    if (self.logged_in[player - 1]) {
+    if (self.isLoggedIn(player)) {
         res.status = 401;
         res.body = "That player is already logged in";
     }
-    self.logged_in[player - 1] = true;
+    const new_player_uuid = uuid.newV4();
+    self.logged_in[player - 1] = new_player_uuid;
     std.log.info("Player {} now logged in", .{player});
-    try res.writer().print("{}", .{player});
+    try res.writer().print("{}", .{new_player_uuid});
 
     // if everyone is logged in, then proceed to the .running state, and signal .start
     // othervise, signal that a login happened, but we are still waiting for everyone to join
     var all_logged_in = true;
-    for (0..self.players) |i| {
-        if (!self.logged_in[i]) {
+    for (0..self.players) |p| {
+        if (!self.isLoggedIn(p + 1)) {
             all_logged_in = false;
             break;
         }
@@ -600,7 +634,7 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
         self.board = try Board.init(self.grid_x, self.grid_y);
         for (0..MAX_PLAYERS) |i| {
-            self.logged_in[i] = false;
+            self.logged_in[i] = uuid.zero;
         }
         self.state = .login;
         self.signal(.wait); // transition to the wait for login state

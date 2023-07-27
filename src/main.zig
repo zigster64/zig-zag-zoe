@@ -63,6 +63,7 @@ pub fn main() !void {
     router.get("/", indexHTML);
     router.get("/index.html", indexHTML);
     router.get("/styles.css", stylesCSS);
+    router.get("/favicon.ico", favicon);
 
     // connect the game object to the router
     game.addRoutes(router);
@@ -95,4 +96,10 @@ fn stylesCSS(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
     _ = req;
     _ = ctx;
     res.body = @embedFile("html/styles.css");
+}
+
+fn favicon(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = req;
+    _ = ctx;
+    res.body = @embedFile("images/favicon.ico");
 }
