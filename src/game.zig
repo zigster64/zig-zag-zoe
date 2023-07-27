@@ -111,7 +111,7 @@ fn watcherThread(self: *Self) void {
                 self.game_mutex.lock();
                 self.current_player = all_players;
                 self.state = .winner;
-                self.expiry_time = std.time.timestamp() + start_countdown_timer;
+                self.expiry_time = t + start_countdown_timer;
                 self.signal(.victory);
                 self.game_mutex.unlock();
             }
