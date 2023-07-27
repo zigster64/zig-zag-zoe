@@ -110,7 +110,7 @@ body {
 }
 
 .red-button:hover {
-    background-color: rgba(255, 0, 0, 1);
+    background-color: rgba(255, 120, 0, 1);
 }
 
 .red-button:active {
@@ -126,13 +126,13 @@ body {
     color: #fff;
     text-shadow: 1px 1px 1px #000;
     border-radius: 10px;
-    background-color: rgba(0, 100, 200, 1);
+    background-color: rgba(100, 20, 120, 1);
     background-image: linear-gradient(to top left, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2) 30%, rgba(0, 0, 0, 0));
     box-shadow: inset 2px 2px 3px rgba(255, 255, 255, 0.6), inset -2px -2px 3px rgba(0, 0, 0, 0.6);
 }
 
 .blue-button:hover {
-    background-color: rgba(255, 0, 0, 1);
+    background-color: rgba(160, 0, 160, 1);
 }
 
 .blue-button:active {
@@ -148,13 +148,13 @@ body {
     color: #fff;
     text-shadow: 1px 1px 1px #000;
     border-radius: 10px;
-    background-color: rgba(0, 255, 88, 1);
+    background-color: rgba(0, 180, 120, 1);
     background-image: linear-gradient(to top left, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2) 30%, rgba(0, 0, 0, 0.5));
     box-shadow: inset 2px 2px 3px rgba(255, 255, 255, 0.6), inset -2px -2px 3px rgba(0, 0, 0, 0.6);
 }
 
 .green-button:hover {
-    background-color: rgba(0, 255, 88, 1);
+    background-color: rgba(0, 255, 180, 1);
 }
 
 .green-button:active {
