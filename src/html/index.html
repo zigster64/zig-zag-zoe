@@ -10,8 +10,11 @@
     <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 
-    <meta name="app-version" version="20230728.2" fix1="use player uuids for security"
-        fix2="maybe fixes the login race condition">
+    <meta name="app-version" version="20230728.4">
+    <meta fix="use player uuids for security">
+    <meta fix="maybe fixes the login race condition">
+    <meta fix="added link to user manual / wiki">
+    <meta fix="readme updates">
 
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,8 +40,13 @@
 
     <!-- Add the clock in a footer here, connected to the clock event -->
     <div class="footer">
-        <span class="clock" sse-swap="clock">
-        </span>
+        <div class="clock" sse-swap="clock"></div>
+        <div>
+            <a href="https://github.com/zigster64/zig-zag-zoe/wiki/Zig-Zag-Zoe-%E2%80%90-Zero-Wing-Edition"
+                target="_wiki">
+                Click Here for User Manual
+            </a>
+        </div>
     </div>
 
     <!-- hidden state variables - replace this with a single session-UUID -->

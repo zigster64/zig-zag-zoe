@@ -17,6 +17,12 @@ body {
   position: relative;
 }
 
+a {
+  font-family: 'Montserrat', sans-serif;
+  color: white;
+  font-size: 32px;
+}
+
 .clock {
   color: yellow;
 }
