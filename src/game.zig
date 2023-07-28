@@ -681,6 +681,12 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
             self.game_mutex.lock();
             defer self.game_mutex.unlock();
             std.log.debug("condition fired - last event is {}", .{self.last_event});
+            if (self.last_event == .login) {
+                // this is a bit nasty - on a login event, need to wait a short time to let the 
+                // login handler flush itself so the client can get it's new player ID 
+                // before we signal the frontend that a new login event has happened
+                std.time.sleep(std.time.ns_per_ms * 200);
+            }
             try stream.writer().print("event: update\ndata: {s}\n\n", .{@tagName(self.last_event)});
         }
     }
