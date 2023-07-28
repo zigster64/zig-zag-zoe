@@ -28,7 +28,8 @@ docker-push:
 	docker tag zig-zag-zoe ${DOCKER_REGISTRY}/zig-zag-zoe:latest
 	docker push ${DOCKER_REGISTRY}/zig-zag-zoe:latest
 
-ecs-service-restart:
+# this is a pain - need to stop the existing task then update the service. better than nothing
+ecs-service-redeploy:
 	aws ecs update-service --profile ${AWS_PROFILE} --cluster zig-zag-zoe --service zig-zag-zoe-service --task-definition zig-zag-zoe-task
 
-build-and-launch: docker-build docker-push ecs-service-restart
+build-and-launch: docker-build docker-push ecs-service-redeploy
