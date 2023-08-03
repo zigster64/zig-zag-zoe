@@ -288,9 +288,9 @@ fn lostAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 fn calcAudio(self: *Self, player: u8) []const u8 {
     if (player == self.current_player) {
         return switch (self.player_mode) {
-            .normal => "<script>yourTurnAudio.volume = 0.8; yourTurnAudio.play()</script>",
-            .flipper => "<script>zeroWingAudio.volume = 0.7; zeroWingAudio.play()</script>",
-            .nuke => "<script>nukeAudio.volume = 1; nukeAudio.play()</script>",
+            .normal => "<script>sing(yourTurnAudio, 1)</script>",
+            .flipper => "<script>sing(zeroWingAudio, 1)</script>",
+            .nuke => "<script>sing(nukeAudio, 1)</script>",
         };
     }
     return "";

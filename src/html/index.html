@@ -61,9 +61,17 @@
         const victoryAudio = new Audio("audio/victory.mp3")
         const lostAudio = new Audio("audio/lost.mp3")
 
-        function sing(audio, volume) {
-            audio.volume = volume;
-            audio.play();
+        function sing(song, volume) {
+            song.volume = volume;
+            // sleep 200ms if volume is down
+            if (volume < 1) {
+                song.onended = () => song.volume = 1;
+                setTimeout(() => {
+                    song.play();
+                }, 200);
+            } else {
+                song.play();
+            }
         }
 
         function initAllAudio() {
