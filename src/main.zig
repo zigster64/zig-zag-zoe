@@ -2,18 +2,25 @@ const std = @import("std");
 const httpz = @import("httpz");
 const Game = @import("game.zig");
 
+const default_port = 3000;
+
+// always log .info, even in release modes
+pub const std_options = struct {
+    pub const log_level = .info;
+};
+
 pub fn usage() void {
     std.debug.print("USAGE: zig-zag-zoe [-p PORTNUMBER]\n", .{});
     std.debug.print("       or use the PORT env var to set the port, for like Docker or whatever\n", .{});
 }
 
 pub fn main() !void {
-    var port: u16 = 3000;
+    var port: u16 = default_port;
 
     var env_port = std.os.getenv("PORT");
     if (env_port != null and env_port.?.len > 0) {
         port = try std.fmt.parseInt(u16, env_port.?, 10);
-        std.debug.print("Port set to {} via ENV\n", .{port});
+        std.log.debug("Port set to {} via ENV\n", .{port});
     }
 
     var args = std.process.args();
@@ -37,8 +44,8 @@ pub fn main() !void {
         }
     }
 
-    std.debug.print("Starting Zig-Zag-Zoe server with new game.\n", .{});
-    std.debug.print("Go to http://localhost:{} to run the game\n", .{port});
+    std.log.info("Starting Zig-Zag-Zoe server with new game", .{});
+    std.log.info("Go to http://localhost:{} to run the game", .{port});
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
@@ -55,6 +62,14 @@ pub fn main() !void {
     var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{
         .address = "0.0.0.0",
         .port = port,
+        .pool_size = Game.MAX_PLAYERS,
+        .request = .{
+            .max_body_size = 256,
+        },
+        .response = .{
+            .body_buffer_size = 100_000, // big enough for the biggest audio file
+            .header_buffer_size = 256,
+        },
     }, &game);
     server.notFound(notFound);
     server.errorHandler(errorHandler);

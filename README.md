@@ -68,7 +68,7 @@ This code is interesting, and worth a read for the following reasons :
 - It uses the excellent http.zig library https://github.com/karlseguin/http.zig to do all the web stuff. I have had exactly zero issues using this lib.
 - Single file binary, which includes the game, a web server, all assets such as HTML, images and audio.  1 file - no litter on your filesystem
 - Generated docker image = 770Kb (compressed) All it has is the compiled executable (2.5MB), which includes only a single binary, nothing else.
-- Run stats - uses about 60MB RAM and really low CPU %
+- Run stats - in ReleaseFast mode running a 2 player game, uses less than 2MB RAM to run, and hardly any CPU. Its pretty resource efficient.
 - Its about as simple as doing the same thing in Go, there is really nothing too nasty required in the code.  
 - The router, and all the HTML contents is part of the Game object ... the implications of this are that it is possible to create 'web components' using this
 zig/htmx approach that are all self contained, and can be imported into other projects, without having to know about connecting up routes, or pulling in content. Interesting.

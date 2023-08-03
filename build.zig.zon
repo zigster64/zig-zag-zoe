@@ -5,7 +5,7 @@
     .dependencies = .{
         .http = .{
             .url = "https://github.com/zigster64/http.zig/archive/refs/heads/master.tar.gz",
-            .hash = "1220a436e7e2e498447d79057194e84c9f7158a8c796dbe721dbe14bb1de5f25c92f",
+	    .hash = "1220acf589a63430b28bdb796f5b923b8ad031fdd30291ec3f151b0982e1909be3e5",
         },
     },
 }

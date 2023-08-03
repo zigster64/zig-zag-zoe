@@ -1,6 +1,6 @@
 <form hx-post="/setup" hx-ext="json-enc">
     <div>
-        <input type="range" id="x" name="x" value="{[x]}" min="2" max="15"
+        <input type="range" id="x" name="x" value="{[x]}" min="2" max="12"
             oninput="document.getElementById('x-value').textContent = this.value">
         <span id="x-value">{[x]}</span>
         <label for="x">Columns</label>
@@ -36,7 +36,7 @@
         <label for="nuke">% Chance to set us up the Bomb ?</label>
     </div>
     <div>
-        <input class="blue-button" type="button" value="Enable Audio" onclick="yourTurnAudio.play()">
+        <input class="blue-button" type="button" value="Enable Audio" onclick="initAllAudio()">
     </div>
     <button class="green-button">Start</button>
 </form>

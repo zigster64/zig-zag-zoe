@@ -10,7 +10,7 @@ const all_players: u8 = 100;
 
 const Self = @This();
 
-const MAX_PLAYERS = 8;
+pub const MAX_PLAYERS = 8;
 
 const State = enum {
     init,
@@ -288,9 +288,9 @@ fn lostAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 fn calcAudio(self: *Self, player: u8) []const u8 {
     if (player == self.current_player) {
         return switch (self.player_mode) {
-            .normal => "<script>yourTurnAudio.play()</script>",
-            .flipper => "<script>zeroWingAudio.play()</script>",
-            .nuke => "<script>nukeAudio.play()</script>",
+            .normal => "<script>yourTurnAudio.volume = 0.8; yourTurnAudio.play()</script>",
+            .flipper => "<script>zeroWingAudio.volume = 0.7; zeroWingAudio.play()</script>",
+            .nuke => "<script>nukeAudio.volume = 1; nukeAudio.play()</script>",
         };
     }
     return "";
@@ -393,7 +393,10 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
 
     for (0..self.grid_y) |y| {
         for (0..self.grid_x) |x| {
-            const value = try self.board.get(x, y);
+            const value = self.board.get(x, y) catch |err| blk: {
+                std.log.info("get {} {} gives error {}", .{ x, y, err });
+                break :blk 0;
+            };
 
             // used square that we cant normally click on
             if (value != 0) {
@@ -426,7 +429,7 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
                 continue;
             }
 
-            // empty square that we cant click on,because its another player's turn
+            // empty square that we cant click on,because its not your turn
             try w.print(@embedFile("html/board/square.x.html"), .{
                 .class = "grid-square",
                 .player = value,
@@ -644,8 +647,13 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 /// events GET handler is an SSE stream that emits events whenever the state changes
 /// or a clock event expires. Uses the Game.event_condition to synch with the outer threads
 fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
-    std.log.info("(event-source) GET /events {}", .{self.state});
+    const start_time = std.time.timestamp();
+    std.log.info("(event-source) GET /events {} started at {}", .{self.state, start_time});
     _ = req;
+
+    errdefer {
+        std.log.info("(event-source) started at {} now exiting", .{start_time});
+    }
 
     var stream = try res.startEventStream();
 
@@ -682,8 +690,8 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
             defer self.game_mutex.unlock();
             std.log.debug("condition fired - last event is {}", .{self.last_event});
             if (self.last_event == .login) {
-                // this is a bit nasty - on a login event, need to wait a short time to let the 
-                // login handler flush itself so the client can get it's new player ID 
+                // this is a bit nasty - on a login event, need to wait a short time to let the
+                // login handler flush itself so the client can get it's new player ID
                 // before we signal the frontend that a new login event has happened
                 std.time.sleep(std.time.ns_per_ms * 200);
             }
