@@ -13,28 +13,28 @@ const Self = @This();
 pub const MAX_PLAYERS = 8;
 
 const State = enum {
-    init,
-    login,
-    running,
-    winner,
-    stalemate,
+    init, // waiting for someone to set us up the game
+    login, // waiting for everyone to login
+    running, // game is running
+    winner, // we have a winner
+    stalemate, // board is full and no winner
 };
 
 const Event = enum {
-    none,
-    init,
-    wait,
-    login,
-    start,
-    next,
-    victory,
-    stalemate,
+    none, // null event
+    init, // back to the start screen
+    wait, // someone set us up the game, start waiting for logins
+    login, // someone logged in, and we are still waiting for other players to login
+    start, // everyone is logged in, and the game has started
+    next, // someone finished their turn, and its now the next players turn
+    victory, // someone won the game, and all base are belong to them
+    stalemate, // someone placed a piece and now all is lost because the board is full and nobody won
 };
 
 const PlayerMode = enum {
-    normal,
-    flipper,
-    nuke,
+    normal, // place piece on empty square
+    zeroWing, // place piece anywhere, including other player's squares
+    nuke, // place piece on empty square, and annihilate adjacent squares
 };
 
 // Game thread control
@@ -45,9 +45,9 @@ event_condition: std.Thread.Condition = .{},
 // Game state variables
 grid_x: u8 = 1,
 grid_y: u8 = 1,
-players: u8 = 2,
+number_of_players: u8 = 2,
 needed_to_win: u8 = 3,
-flipper_chance: u8 = 0,
+zero_wing_chance: u8 = 0,
 nuke_chance: u8 = 0,
 player_mode: PlayerMode = .normal,
 board: Board = undefined,
@@ -61,8 +61,8 @@ watcher: std.Thread = undefined,
 countdown_timer: i64 = start_countdown_timer,
 
 /// init returns a new Game object
-pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8) !Self {
-    if (players > 8) {
+pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, zero_wing: u8) !Self {
+    if (players > MAX_PLAYERS) {
         return Errors.GameError.TooManyPlayers;
     }
 
@@ -74,9 +74,9 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, flipper: u8)
         .board = try Board.init(grid_x, grid_y),
         .grid_x = grid_x,
         .grid_y = grid_y,
-        .players = players,
+        .number_of_players = players,
         .needed_to_win = needed_to_win,
-        .flipper_chance = flipper,
+        .zero_wing_chance = zero_wing,
         .prng = std.rand.DefaultPrng.init(os_seed),
         .countdown_timer = start_countdown_timer,
     };
@@ -116,9 +116,8 @@ fn watcherThread(self: *Self) void {
 
                 self.game_mutex.lock();
                 self.current_player = all_players;
-                self.state = .winner;
                 self.expiry_time = t + start_countdown_timer;
-                self.signal(.victory);
+                self.newState(.winner, .victory);
                 self.game_mutex.unlock();
             }
         }
@@ -126,21 +125,21 @@ fn watcherThread(self: *Self) void {
     }
 }
 
-/// d10 rolls a 10 sided dice
-fn d10(self: *Self) u8 {
-    return (self.prng.random().int(u8) % (11)) * 10;
+/// rollDice function returns true/false if some roll of a D100 <= the % percent chance given
+fn rollDice(self: *Self, percent: usize) bool {
+    return (self.prng.random().intRangeAtMost(usize, 1, 100) <= percent);
 }
 
 /// randPlayerMode will return a newly generated mode base of the % chance of things in the current game settings.
 /// use this to get a random mode for the next player's turn at the end of the turn.
 fn randPlayerMode(self: *Self) PlayerMode {
     // roll a dice for the zero wing
-    if (self.d10() < self.flipper_chance) {
-        return .flipper;
+    if (self.rollDice(self.zero_wing_chance)) {
+        return .zeroWing;
     }
 
     // roll a new dice for the bomb
-    if (self.d10() < self.nuke_chance) {
+    if (self.rollDice(self.nuke_chance)) {
         return .nuke;
     }
     return .normal;
@@ -165,12 +164,15 @@ pub fn addRoutes(self: *Self, router: anytype) void {
     router.get("/audio/lost.mp3", Self.lostAudio);
 }
 
-/// signal() function transitions the game state to the new state, and signals the event handlers to update
-// you must have the game_mutex locked already when you call signal()
-fn signal(self: *Self, ev: Event) void {
+/// newState(newState, emitEvent) will transition to a new state, and emit the given event
+/// which will awaken all the SSE event stream threads
+/// This will also reset the countdown clock
+/// MUTEX - you MUST have the mutex locked before calling set state
+fn newState(self: *Self, new_state: State, emit_event: Event) void {
     // locks the event_mutex (not the game_mutex) - so that it can broadcast all event threads
     self.event_mutex.lock();
-    self.last_event = ev;
+    self.last_event = emit_event;
+    self.state = new_state;
     const new_expiry_time = std.time.timestamp() + self.countdown_timer;
     if (self.expiry_time < new_expiry_time) {
         self.expiry_time = new_expiry_time;
@@ -178,7 +180,7 @@ fn signal(self: *Self, ev: Event) void {
     self.event_condition.broadcast();
     self.event_mutex.unlock();
 
-    std.log.info("{}: signal event {}", .{std.time.timestamp(), ev});
+    std.log.info("{}: signal event {}", .{ std.time.timestamp(), emit_event });
 }
 
 /// reboot will reboot the server back to the vanilla state. Call this when everything has timed out, and we want to go right back to the original start
@@ -186,15 +188,14 @@ fn reboot(self: *Self) void {
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
 
-    self.state = .init;
     self.grid_x = 3;
     self.grid_y = 3;
-    self.players = 2;
+    self.number_of_players = 2;
     self.needed_to_win = 3;
-    self.flipper_chance = 0;
+    self.zero_wing_chance = 0;
     self.expiry_time = std.time.timestamp() + initial_countdown_timer;
     self.zapLogins();
-    self.signal(.init);
+    self.newState(.init, .init);
 }
 
 /// restart will set the game back to the setup phase, using the current Game parameters
@@ -204,11 +205,10 @@ fn restart(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     defer self.game_mutex.unlock();
 
     res.body = "restarted";
-    self.state = .init;
     self.countdown_timer = start_countdown_timer;
     self.expiry_time = std.time.timestamp() + initial_countdown_timer;
     self.zapLogins();
-    self.signal(.init);
+    self.newState(.init, .init);
 }
 
 /// clock() function emits an event of type clock with the current number of remaining seconds until the next expiry time
@@ -220,21 +220,24 @@ fn clock(self: *Self, stream: std.net.Stream) !void {
     try w.writeAll("event: clock\n");
     var remaining = self.expiry_time - std.time.timestamp();
     if (self.state == .running and remaining > 0) {
-        try stream.writer().print("data: {d} seconds remaining ...\n\n", .{remaining});
-        // } else {
-        // try w.writeAll("data: 🕑\n\n");
+        try w.print("data: {d} seconds remaining ...\n\n", .{remaining});
+    } else {
+        try w.writeAll(" \n\n"); // blank out the clock countdown element on the client
     }
 }
 
 /// getPlayer is a utility function to extract the player ID from the request header
-// the X-PLAYER header is passed as a UUID, which we decode into a player ID 1-MAX_PLAYERS
+/// the X-PLAYER header is passed as a UUID, which we decode into a player ID 1-number_of_players
+/// or 0 if there is no valid player in the X-PLAYER header
+/// Also will return 0 if the player is valid, but not registered as logged in, which
+/// prevents old player UUIDs from being re-used
 fn getPlayer(self: *Self, req: *httpz.Request) u8 {
     const none: u8 = 0;
     const player_uuid_string = req.headers.get("x-player") orelse return none;
     const player_uuid = uuid.UUID.parse(player_uuid_string) catch return none;
     if (player_uuid.match(uuid.zero)) return none;
 
-    for (0..MAX_PLAYERS) |p| {
+    for (0..self.number_of_players) |p| {
         if (player_uuid.match(self.logged_in[p])) {
             return @intCast(p + 1);
         }
@@ -289,7 +292,7 @@ fn calcAudio(self: *Self, player: u8) []const u8 {
     if (player == self.current_player) {
         return switch (self.player_mode) {
             .normal => "<script>sing(yourTurnAudio, 1)</script>",
-            .flipper => "<script>sing(zeroWingAudio, 1)</script>",
+            .zeroWing => "<script>sing(zeroWingAudio, 1)</script>",
             .nuke => "<script>sing(nukeAudio, 1)</script>",
         };
     }
@@ -312,8 +315,7 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
             res.body = @embedFile("html/header/login.html");
         },
         .running => {
-            const w = res.writer();
-            try w.print(@embedFile("html/header/running.x.html"), .{
+            try res.writer().print(@embedFile("html/header/running.x.html"), .{
                 .current_player = self.current_player,
                 .audio = self.calcAudio(player),
             });
@@ -341,13 +343,12 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     switch (self.state) {
         .init => {
-            const w = res.writer();
-            try w.print(@embedFile("html/setup/setup_game.x.html"), .{
+            try res.writer().print(@embedFile("html/setup/setup_game.x.html"), .{
                 .x = self.grid_x,
                 .y = self.grid_y,
-                .players = self.players,
+                .players = self.number_of_players,
                 .win = self.needed_to_win,
-                .flipper = self.flipper_chance,
+                .zero_wing = self.zero_wing_chance,
                 .nuke = self.nuke_chance,
             });
         },
@@ -361,8 +362,7 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         },
         .winner => {
             try self.showBoard(0, res);
-            const w = res.writer();
-            try w.writeAll(@embedFile("html/widgets/restart-button.html"));
+            try res.writer().writeAll(@embedFile("html/widgets/restart-button.html"));
         },
         .stalemate => {
             res.body = @embedFile("html/stalemate.html");
@@ -375,7 +375,7 @@ fn calcBoardClass(self: *Self, player: u8) []const u8 {
     if (player == self.current_player) {
         return switch (self.player_mode) {
             .normal => "active-player",
-            .flipper => "active-player-flip",
+            .zeroWing => "active-player-flip",
             .nuke => "active-player-nuke",
         };
     }
@@ -400,8 +400,8 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
 
             // used square that we cant normally click on
             if (value != 0) {
-                if (self.player_mode == .flipper and self.state == .running and player == self.current_player) {
-                    // BUT ! we have flipper powers this turn, so we can change another player's piece to our piece !
+                if (self.player_mode == .zeroWing and self.state == .running and player == self.current_player) {
+                    // BUT ! we have zeroWing powers this turn, so we can change another player's piece to our piece !
                     try w.print(@embedFile("html/board/clickable-square.x.html"), .{
                         .class = "grid-square-clickable",
                         .x = x + 1,
@@ -442,7 +442,7 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     if (self.current_player == player) {
         switch (self.player_mode) {
             .normal => try w.writeAll(@embedFile("html/board/your-move.html")),
-            .flipper => try w.writeAll(@embedFile("html/board/zero-wing-enabled.html")),
+            .zeroWing => try w.writeAll(@embedFile("html/board/zero-wing-enabled.html")),
             .nuke => try w.writeAll(@embedFile("html/board/setup-us-the-bomb.html")),
         }
     }
@@ -450,19 +450,21 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     return;
 }
 
+/// isLoggedIn returns true/false if the given player is logged in.
+/// Pass playerID in the range 1..MAX
 fn isLoggedIn(self: *Self, player: usize) bool {
-    if (player < 1 or player > MAX_PLAYERS) return false;
+    if (player < 1 or player > self.number_of_players) return false;
     return !uuid.zero.match(self.logged_in[player - 1]);
 }
 
-// loginForm() handler returns either a login form, or a display of who we are waiting for if the user is logged in
+/// loginForm() handler returns either a login form, or a display of who we are waiting for if the user is logged in
 fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const w = res.writer();
     const player = self.getPlayer(req);
 
     if (player > 0) {
         try w.writeAll(@embedFile("html/login/waiting-title.html"));
-        for (0..self.players) |p| {
+        for (0..self.number_of_players) |p| {
             if (!self.isLoggedIn(p + 1)) {
                 try w.print(@embedFile("html/login/waiting-player.x.html"), .{
                     .player = p + 1,
@@ -470,15 +472,12 @@ fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
             }
         }
         try w.writeAll(@embedFile("html/login/waiting-end.html"));
-        // try w.print(@embedFile("html/login/set-player.x.html"), .{
-        //     .player_uuid = self.logged_in[player],
-        // });
         return;
     }
 
     try w.writeAll(@embedFile("html/login/login-form-start.html"));
 
-    for (0..self.players) |p| {
+    for (0..self.number_of_players) |p| {
         if (!self.isLoggedIn(p + 1)) {
             try w.print(@embedFile("html/login/login-form-select-player.x.html"), .{
                 .player = p + 1,
@@ -497,8 +496,8 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const player_value = req.param("player").?;
     const player = try std.fmt.parseInt(u8, player_value, 10);
 
-    std.log.info("{}: POST login {}", .{std.time.timestamp(), player});
-    if (player < 1 or player > self.players) {
+    std.log.info("{}: POST login {}", .{ std.time.timestamp(), player });
+    if (player < 1 or player > self.number_of_players) {
         res.status = 401;
         res.body = "Invalid Player";
         return;
@@ -507,6 +506,7 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         res.status = 401;
         res.body = "That player is already logged in";
     }
+
     const new_player_uuid = uuid.newV4();
     self.logged_in[player - 1] = new_player_uuid;
     std.log.info("Player {} now logged in", .{player});
@@ -515,7 +515,7 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     // if everyone is logged in, then proceed to the .running state, and signal .start
     // othervise, signal that a login happened, but we are still waiting for everyone to join
     var all_logged_in = true;
-    for (0..self.players) |p| {
+    for (0..self.number_of_players) |p| {
         if (!self.isLoggedIn(p + 1)) {
             all_logged_in = false;
             break;
@@ -523,20 +523,25 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     }
     if (all_logged_in) {
         std.log.info("Everyone is now logged in", .{});
-        self.state = .running;
         self.current_player = 1;
         self.expiry_time = std.time.timestamp() + start_countdown_timer;
         self.countdown_timer = start_countdown_timer;
-        self.signal(.start);
+        self.newState(.running, .start);
     } else {
-        self.signal(.login);
+        self.newState(self.state, .login);
     }
 }
 
-// square POST handler - user has clicked on a square to place their peice and end their turn
+/// square POST handler - user has clicked on a square to place their peice and end their turn
 fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     self.game_mutex.lock();
     defer self.game_mutex.unlock();
+
+    if (self.state != .running) {
+        res.status = 401;
+        res.body = "Game not running";
+        return;
+    }
 
     const x = std.fmt.parseInt(usize, req.param("x").?, 10) catch 0;
     const y = std.fmt.parseInt(usize, req.param("y").?, 10) catch 0;
@@ -544,7 +549,7 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const player = self.getPlayer(req);
 
     // std.log.info("POST square {},{} for player {}", .{ x, y, player });
-    if (player < 1 or player > self.players) {
+    if (player < 1 or player > self.number_of_players) {
         res.status = 401;
         res.body = "Invalid Player";
         return;
@@ -568,21 +573,19 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     if (self.board.victory(self.current_player, self.needed_to_win)) {
         std.log.info("Victory for player {}", .{self.current_player});
         res.body = "Victory";
-        self.signal(.victory);
-        self.state = .winner;
+        self.newState(.winner, .victory);
         return;
     }
 
     if (self.board.is_full()) {
         std.log.info("Board is full - stalemate !", .{});
         res.body = "Stalemate";
-        self.signal(.stalemate);
-        self.state = .stalemate;
+        self.newState(.stalemate, .stalemate);
         return;
     }
 
     self.current_player += 1;
-    if (self.current_player > self.players) {
+    if (self.current_player > self.number_of_players) {
         self.current_player = 1;
     }
 
@@ -591,10 +594,10 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     if (self.countdown_timer > 1) {
         self.countdown_timer -= 1;
     }
-    self.signal(.next);
+    self.newState(.running, .next);
 }
 
-/// setup() POST requ sets up a new game, with specified grid size and number of players
+/// setup() POST request will set us up a new game, with specified grid size and number of players
 fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = res;
     self.game_mutex.lock();
@@ -605,7 +608,7 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         y: u8,
         players: u8,
         win: u8,
-        flipper: u8,
+        zero_wing: u8,
         nuke: u8,
     };
 
@@ -629,19 +632,16 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         }
         self.grid_x = setup_request.x;
         self.grid_y = setup_request.y;
-        self.players = setup_request.players;
+        self.number_of_players = setup_request.players;
         self.needed_to_win = setup_request.win;
-        self.flipper_chance = setup_request.flipper;
+        self.zero_wing_chance = setup_request.zero_wing;
         self.nuke_chance = setup_request.nuke;
 
         self.player_mode = self.randPlayerMode();
 
         self.board = try Board.init(self.grid_x, self.grid_y);
-        for (0..MAX_PLAYERS) |i| {
-            self.logged_in[i] = uuid.zero;
-        }
-        self.state = .login;
-        self.signal(.wait); // transition to the wait for login state
+        self.zapLogins();
+        self.newState(.login, .wait);
     }
 }
 
@@ -649,7 +649,7 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 /// or a clock event expires. Uses the Game.event_condition to synch with the outer threads
 fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const start_time = std.time.timestamp();
-    std.log.info("{}: (event-source) GET /events {} started at {}", .{start_time, self.state, start_time});
+    std.log.info("{}: (event-source) GET /events {} started at {}", .{ start_time, self.state, start_time });
     _ = req;
 
     errdefer {

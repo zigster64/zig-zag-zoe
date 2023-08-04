@@ -54,9 +54,9 @@ pub fn main() !void {
     var grid_y: u8 = 3;
     var players: u8 = 2;
     var win: u8 = 3;
-    var flipper: u8 = 0;
+    var zero_wing: u8 = 0;
 
-    var game = try Game.init(grid_x, grid_y, players, win, flipper);
+    var game = try Game.init(grid_x, grid_y, players, win, zero_wing);
     try game.startWatcher();
 
     var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{

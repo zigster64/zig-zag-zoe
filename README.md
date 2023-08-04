@@ -6,11 +6,18 @@ http://zig-zag-zoe.com
 
 .. (running on a t4g-nano instance on AWS - Linux ARM64, with 512MB memory )
 
-** Uses Zig Master  0.11-dev **
+** Uses Latest Zig 0.11.0 official release **
+
 
 ![screenshot](https://github.com/zigster64/zig-zag-zoe/blob/main/src/images/zzz-screenshot.jpg)
 
 # Install
+
+Get the latest Zig 0.11.0 release installed :
+
+https://ziglang.org/download/
+
+
 
 ```
 git clone https://github.com/zigster64/zig-zag-zoe.git
@@ -41,13 +48,29 @@ https://github.com/zigster64/zig-zag-zoe/wiki/Zig-Zag-Zoe-%E2%80%90-Zero-Wing-Ed
 
 ## Bugs
 
-There is a bug where sometimes in normal mode ... usually after the previous player had bomb mode ... then clicking on a square
-seems to zap 1 other adjacent square.  Maybe. Cant reproduce it yet.
+There are a few lingering bugs that I havent got around to fixing yet.
 
-I will either fix this bug, or leave it in there as a feature - rationale is that there might be some bomb residue laying around
-after someone set us up the bomb.
+Audio support on iOS + Safari is a lost cause - can fix it, but it requires a lot of JS code, and I figure that is outside the
+scope of a nice clean Zig application that Im trying to build here.
 
-Havent seen it happen lately, but then I havent changed anything to fix it either .... so who knows ?
+There may also be a persistent bug where the CPU suddenly spikes to 100% and stays there - at least it does on AWS, but only
+after 2-3 days running. Dont know if its fixed yet, but still looking into that.
+
+Would appreciate any feedback on how to debug that in a running docker container on AWS :)
+
+Also appreciate any other thrashing / trying to break the application, as it all helps make the Zig http ecosystem much 
+more robust.  Thanks.
+
+## Contributions
+
+Yep, thats cool.  Just go through the regular channels
+
+- raise an issue
+- post a PR
+
+If you have questions or RFCs - you can either post them as an issue here, or discuss on Zig discord.
+
+Dont be too sad if it takes > 48hr for me to respond though ... will do my best.
 
 ## More Modes and Gameplay ideas
 
