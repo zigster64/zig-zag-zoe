@@ -178,7 +178,7 @@ fn signal(self: *Self, ev: Event) void {
     self.event_condition.broadcast();
     self.event_mutex.unlock();
 
-    std.log.info("signal event {}", .{ev});
+    std.log.info("{}: signal event {}", .{std.time.timestamp(), ev});
 }
 
 /// reboot will reboot the server back to the vanilla state. Call this when everything has timed out, and we want to go right back to the original start
@@ -302,7 +302,7 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     defer self.game_mutex.unlock();
 
     const player = self.getPlayer(req);
-    std.log.info("GET /header {} player {}", .{ self.state, player });
+    std.log.info("{}: GET /header {} player {}", .{ std.time.timestamp(), self.state, player });
 
     switch (self.state) {
         .init => {
@@ -337,7 +337,7 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     defer self.game_mutex.unlock();
 
     const player = self.getPlayer(req);
-    std.log.info("GET /app {} player {}", .{ self.state, player });
+    std.log.info("{}: GET /app {} player {}", .{ std.time.timestamp(), self.state, player });
 
     switch (self.state) {
         .init => {
@@ -497,7 +497,7 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const player_value = req.param("player").?;
     const player = try std.fmt.parseInt(u8, player_value, 10);
 
-    std.log.info("POST login {}", .{player});
+    std.log.info("{}: POST login {}", .{std.time.timestamp(), player});
     if (player < 1 or player > self.players) {
         res.status = 401;
         res.body = "Invalid Player";
@@ -522,6 +522,7 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         }
     }
     if (all_logged_in) {
+        std.log.info("Everyone is now logged in", .{});
         self.state = .running;
         self.current_player = 1;
         self.expiry_time = std.time.timestamp() + start_countdown_timer;
@@ -610,7 +611,7 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     // sanity check the inputs !
     if (try req.json(SetupRequest)) |setup_request| {
-        std.log.info("POST /setup {} {}", .{ self.state, setup_request });
+        std.log.info("{}: POST /setup {} {}", .{ std.time.timestamp(), self.state, setup_request });
         if (setup_request.x * setup_request.y > 144) {
             return Errors.GameError.GridTooBig;
         }
@@ -648,7 +649,7 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 /// or a clock event expires. Uses the Game.event_condition to synch with the outer threads
 fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const start_time = std.time.timestamp();
-    std.log.info("(event-source) GET /events {} started at {}", .{self.state, start_time});
+    std.log.info("{}: (event-source) GET /events {} started at {}", .{start_time, self.state, start_time});
     _ = req;
 
     errdefer {
@@ -689,7 +690,7 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
             self.game_mutex.lock();
             defer self.game_mutex.unlock();
             std.log.debug("condition fired - last event is {}", .{self.last_event});
-            if (self.last_event == .login) {
+            if (self.last_event == .login or self.last_event == .start) {
                 // this is a bit nasty - on a login event, need to wait a short time to let the
                 // login handler flush itself so the client can get it's new player ID
                 // before we signal the frontend that a new login event has happened

@@ -4,8 +4,8 @@
 
     .dependencies = .{
         .http = .{
-            .url = "https://github.com/zigster64/http.zig/archive/refs/heads/master.tar.gz",
-	    .hash = "1220acf589a63430b28bdb796f5b923b8ad031fdd30291ec3f151b0982e1909be3e5",
+            .url = "https://github.com/zigster64/http.zig/archive/refs/heads/broken-pipe.tar.gz",
+            .hash = "12203f136f892bdb1f1c30b0525848fb63ea5877179099c677a73c441e3303d8bcb1",
         },
     },
 }

@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Zig Zac Zoe</title>
+    <title>Zig Zag Zoe</title>
 
     <script src="https://unpkg.com/htmx.org@1.9.2"
         integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
@@ -10,9 +10,10 @@
     <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 
-    <meta name="app-version" version="20230803.1">
-    <meta fix="tweak memory settings">
-    <meta fix="iOS audio fixes">
+    <meta name="app-version" version="20230804.1">
+    <meta fix="Safari and iOS audio">
+    <meta fix="Broken Pipe fix">
+
 
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,30 +57,24 @@
     <script>
         // define some audio snippets
         const yourTurnAudio = new Audio("audio/your-turn.mp3")
-        const zeroWingAudio = new Audio("audio/zero-wing.mp3")
-        const nukeAudio = new Audio("audio/nuke.mp3")
-        const victoryAudio = new Audio("audio/victory.mp3")
-        const lostAudio = new Audio("audio/lost.mp3")
+        const zeroWingAudio = new Audio("audio/zero-wing.mp3"); zeroWingAudio.volume = 0;
+        const nukeAudio = new Audio("audio/nuke.mp3"); nukeAudio.volume = 0;
+        const victoryAudio = new Audio("audio/victory.mp3"); victoryAudio.volume = 0;
+        const lostAudio = new Audio("audio/lost.mp3"); lostAudio.volume = 0;
 
         function sing(song, volume) {
             song.volume = volume;
-            // sleep 200ms if volume is down
-            if (volume < 1) {
-                song.onended = () => song.volume = 1;
-                setTimeout(() => {
-                    song.play();
-                }, 200);
-            } else {
-                song.play();
-            }
+            song.play();
         }
 
-        function initAllAudio() {
-            sing(yourTurnAudio, 1);
-            sing(zeroWingAudio, 0);
-            sing(nukeAudio, 0);
-            sing(victoryAudio, 0);
-            sing(lostAudio, 0);
+        // this is needed for Safari to load the audio due to a user interaction
+        // and OMG - ios safari ignores the volume value !
+        function initAudio() {
+            sing(yourTurnAudio, 1)
+            sing(zeroWingAudio, 0)
+            sing(nukeAudio, 0)
+            sing(victoryAudio, 0)
+            sing(lostAudio, 0)
         }
 
         // Just some minimal vanilla-JS to add a couple of helper functions
