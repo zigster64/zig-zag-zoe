@@ -146,7 +146,7 @@ fn randPlayerMode(self: *Self) PlayerMode {
     return .normal;
 }
 
-pub fn dispatcher(self: *Self, action: httpz.Action(*Self), req: *httpz.Request, res: *httpz.Response) !void {
+pub fn logger(self: *Self, action: httpz.Action(*Self), req: *httpz.Request, res: *httpz.Response) !void {
     // do some memory logging and stats here
     self.game_mutex.lock();
     const player = self.getPlayer(req);
@@ -155,7 +155,6 @@ pub fn dispatcher(self: *Self, action: httpz.Action(*Self), req: *httpz.Request,
     self.last_rss = ru.maxrss;
     self.game_mutex.unlock();
 
-    res.header("cors", "isslow");
     return action(self, req, res);
 }
 

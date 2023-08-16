@@ -44,10 +44,22 @@ pub fn main() !void {
         }
     }
 
-    std.log.info("Starting Zig-Zag-Zoe server with new game", .{});
-    std.log.info("Go to http://localhost:{} to run the game", .{port});
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
+
+    std.log.info("Starting Zig-Zag-Zoe server with new game", .{});
+    std.log.info("Go to http://localhost:{} to run the game, or one of these addresses :", .{port});
+
+    // do some digging to get a list of IPv4 addresses that we are listening on
+    var hostBuffer: [std.os.HOST_NAME_MAX]u8 = undefined;
+    const hostname = try std.os.gethostname(&hostBuffer);
+    var addressList = try std.net.getAddressList(allocator, hostname, port);
+    for (addressList.addrs) |address| {
+        if (address.any.family == std.os.AF.INET) {
+            std.log.info("- http://{}", .{address});
+        }
+    }
+    addressList.deinit();
 
     // TODO - allow grid size and player count to be config params
     var grid_x: u8 = 3;
@@ -73,7 +85,7 @@ pub fn main() !void {
     }, &game);
     server.notFound(notFound);
     server.errorHandler(errorHandler);
-    server.dispatcher(Game.dispatcher);
+    server.dispatcher(Game.logger);
 
     var router = server.router();
     router.get("/", indexHTML);
