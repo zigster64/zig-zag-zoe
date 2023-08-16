@@ -145,6 +145,13 @@ fn randPlayerMode(self: *Self) PlayerMode {
     return .normal;
 }
 
+pub fn dispatcher(self: *Self, action: httpz.Action(*Self), req: *httpz.Request, res: *httpz.Response) !void {
+    const player = self.getPlayer(req);
+    std.log.info("[{}:{s}:{}] {s} {s}", .{ std.time.timestamp(), @tagName(self.state), player, @tagName(req.method), req.url.raw });
+    res.header("cors", "isslow");
+    return action(self, req, res);
+}
+
 /// addRoutes sets up the routes and handlers used in this game object
 pub fn addRoutes(self: *Self, router: anytype) void {
     _ = self;
@@ -305,7 +312,6 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     defer self.game_mutex.unlock();
 
     const player = self.getPlayer(req);
-    std.log.info("{}: GET /header {} player {}", .{ std.time.timestamp(), self.state, player });
 
     switch (self.state) {
         .init => {
@@ -339,7 +345,6 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     defer self.game_mutex.unlock();
 
     const player = self.getPlayer(req);
-    std.log.info("{}: GET /app {} player {}", .{ std.time.timestamp(), self.state, player });
 
     switch (self.state) {
         .init => {
@@ -496,7 +501,6 @@ fn login(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const player_value = req.param("player").?;
     const player = try std.fmt.parseInt(u8, player_value, 10);
 
-    std.log.info("{}: POST login {}", .{ std.time.timestamp(), player });
     if (player < 1 or player > self.number_of_players) {
         res.status = 401;
         res.body = "Invalid Player";
@@ -548,7 +552,6 @@ fn square(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     const player = self.getPlayer(req);
 
-    // std.log.info("POST square {},{} for player {}", .{ x, y, player });
     if (player < 1 or player > self.number_of_players) {
         res.status = 401;
         res.body = "Invalid Player";
@@ -614,7 +617,6 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     // sanity check the inputs !
     if (try req.json(SetupRequest)) |setup_request| {
-        std.log.info("{}: POST /setup {} {}", .{ std.time.timestamp(), self.state, setup_request });
         if (setup_request.x * setup_request.y > 144) {
             return Errors.GameError.GridTooBig;
         }
@@ -649,7 +651,6 @@ fn setup(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 /// or a clock event expires. Uses the Game.event_condition to synch with the outer threads
 fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const start_time = std.time.timestamp();
-    std.log.info("{}: (event-source) GET /events {} started at {}", .{ start_time, self.state, start_time });
     _ = req;
 
     errdefer {

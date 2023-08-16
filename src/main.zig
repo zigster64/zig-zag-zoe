@@ -73,6 +73,7 @@ pub fn main() !void {
     }, &game);
     server.notFound(notFound);
     server.errorHandler(errorHandler);
+    server.dispatcher(Game.dispatcher);
 
     var router = server.router();
     router.get("/", indexHTML);

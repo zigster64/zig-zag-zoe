@@ -4,8 +4,8 @@
 
     .dependencies = .{
         .http = .{
-            .url = "https://github.com/zigster64/http.zig/archive/refs/heads/error-unexpected.tar.gz",
-            .hash = "1220ef7c83dc9255200da6e774b2265d86c3e3dbfd2a219794f2bf3accc9c7ac61d3",
+            .url = "https://github.com/zigster64/http.zig/archive/refs/heads/master.tar.gz",
+            .hash = "12204d254505fd33404d95da79024bcac378bfd558987a8f04bd2920af53e7aed768",
         },
     },
 }

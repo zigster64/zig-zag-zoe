@@ -16,13 +16,14 @@ run-fast:
 docker: docker-build docker-push
 
 docker-build:
-	zig build -Dtarget=aarch64-linux-musl -Doptimize=ReleaseFast
+	#zig build -Dtarget=aarch64-linux-musl -Doptimize=ReleaseFast
+	zig build -Dtarget=aarch64-linux-musl -Doptimize=Debug
 	ls -l zig-out/bin/zig-zag-zoe
 	file zig-out/bin/zig-zag-zoe
 	docker build -t zig-zag-zoe -f Docker/Dockerfile .
 
 docker-run:
-	docker run -it -e PORT=8080 -p 8080:3000 zig-zag-zoe:latest
+	docker run -it -e PORT=8080 -p 8080:8080 zig-zag-zoe:latest
 
 docker-push:
 	ecr-login
