@@ -59,6 +59,7 @@ current_player: u8 = 0,
 prng: std.rand.Xoshiro256 = undefined,
 watcher: std.Thread = undefined,
 countdown_timer: i64 = start_countdown_timer,
+last_rss: isize = 0,
 
 /// init returns a new Game object
 pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, zero_wing: u8) !Self {
@@ -146,8 +147,14 @@ fn randPlayerMode(self: *Self) PlayerMode {
 }
 
 pub fn dispatcher(self: *Self, action: httpz.Action(*Self), req: *httpz.Request, res: *httpz.Response) !void {
+    // do some memory logging and stats here
+    self.game_mutex.lock();
     const player = self.getPlayer(req);
-    std.log.info("[{}:{s}:{}] {s} {s}", .{ std.time.timestamp(), @tagName(self.state), player, @tagName(req.method), req.url.raw });
+    const ru = std.os.getrusage(0);
+    std.log.info("[{}:{s}:{}:{}:{}] {s} {s}", .{ std.time.timestamp(), @tagName(self.state), player, ru.maxrss, ru.maxrss - self.last_rss, @tagName(req.method), req.url.raw });
+    self.last_rss = ru.maxrss;
+    self.game_mutex.unlock();
+
     res.header("cors", "isslow");
     return action(self, req, res);
 }
