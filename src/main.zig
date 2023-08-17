@@ -5,6 +5,7 @@ const Game = @import("game.zig");
 const default_port = 3000;
 
 // always log .info, even in release modes
+// change this to .debug if you want extreme debugging
 pub const std_options = struct {
     pub const log_level = .info;
 };
@@ -48,18 +49,8 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     std.log.info("Starting Zig-Zag-Zoe server with new game", .{});
-    std.log.info("Go to http://localhost:{} to run the game, or one of these addresses :", .{port});
 
-    // do some digging to get a list of IPv4 addresses that we are listening on
-    var hostBuffer: [std.os.HOST_NAME_MAX]u8 = undefined;
-    const hostname = try std.os.gethostname(&hostBuffer);
-    var addressList = try std.net.getAddressList(allocator, hostname, port);
-    for (addressList.addrs) |address| {
-        if (address.any.family == std.os.AF.INET) {
-            std.log.info("- http://{}", .{address});
-        }
-    }
-    addressList.deinit();
+    try printValidAddresses(allocator, port);
 
     // TODO - allow grid size and player count to be config params
     var grid_x: u8 = 3;
@@ -99,35 +90,58 @@ pub fn main() !void {
     return server.listen();
 }
 
-// note that the error handler return `void` and not `!void`
-fn errorHandler(ctx: *Game, req: *httpz.Request, res: *httpz.Response, err: anyerror) void {
-    _ = ctx;
-    res.status = 500;
-    res.body = "Error";
-    std.log.warn("Error {} on request {s}", .{ err, req.url.raw });
+fn printValidAddresses(allocator: std.mem.Allocator, port: u16) !void {
+    std.log.info("The game should be visible on any of these addresses:", .{});
+
+    // do some digging to get a list of IPv4 addresses that we are listening on
+    std.log.info("- http://localhost:{}", .{port});
+    var hostBuffer: [std.os.HOST_NAME_MAX]u8 = undefined;
+    const hostname = try std.os.gethostname(&hostBuffer);
+    std.log.info("- http://{s}:{}", .{ hostname, port });
+
+    var addressList = try std.net.getAddressList(allocator, hostname, port);
+    defer addressList.deinit();
+
+    var uniqueIPv4Addresses = std.AutoHashMap(std.net.Ip4Address, bool).init(allocator);
+    defer uniqueIPv4Addresses.deinit();
+
+    for (addressList.addrs) |address| {
+        if (address.any.family == std.os.AF.INET) {
+            try uniqueIPv4Addresses.put(address.in, true);
+        }
+    }
+
+    var iter = uniqueIPv4Addresses.keyIterator();
+    while (iter.next()) |address| {
+        std.log.info("- http://{}", .{address});
+    }
 }
 
-fn notFound(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
-    _ = req;
-    _ = ctx;
+// note that the error handler return `void` and not `!void`
+fn errorHandler(game: *Game, req: *httpz.Request, res: *httpz.Response, err: anyerror) void {
+    game.logExtra(req, "(500 Error)");
+    res.status = 500;
+    res.body = "Error";
+    std.log.err("Error {} on request {s}", .{ err, req.url.raw });
+}
+
+fn notFound(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    game.logExtra(req, "(404 Not Found)");
     res.status = 404;
     res.body = "File not found";
 }
 
-fn indexHTML(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
-    _ = req;
-    _ = ctx;
+fn indexHTML(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    game.log(req, 0);
     res.body = @embedFile("html/index.html");
 }
 
-fn stylesCSS(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
-    _ = req;
-    _ = ctx;
+fn stylesCSS(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    game.log(req, 0);
     res.body = @embedFile("html/styles.css");
 }
 
-fn favicon(ctx: *Game, req: *httpz.Request, res: *httpz.Response) !void {
-    _ = req;
-    _ = ctx;
+fn favicon(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    game.log(req, 0);
     res.body = @embedFile("images/favicon.ico");
 }

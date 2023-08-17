@@ -146,18 +146,6 @@ fn randPlayerMode(self: *Self) PlayerMode {
     return .normal;
 }
 
-pub fn logger(self: *Self, action: httpz.Action(*Self), req: *httpz.Request, res: *httpz.Response) !void {
-    // do some memory logging and stats here
-    self.game_mutex.lock();
-    const player = self.getPlayer(req);
-    const ru = std.os.getrusage(0);
-    std.log.info("[{}:{s}:{}:{}:{}] {s} {s}", .{ std.time.timestamp(), @tagName(self.state), player, ru.maxrss, ru.maxrss - self.last_rss, @tagName(req.method), req.url.raw });
-    self.last_rss = ru.maxrss;
-    self.game_mutex.unlock();
-
-    return action(self, req, res);
-}
-
 /// addRoutes sets up the routes and handlers used in this game object
 pub fn addRoutes(self: *Self, router: anytype) void {
     _ = self;
@@ -175,6 +163,34 @@ pub fn addRoutes(self: *Self, router: anytype) void {
     router.get("/audio/nuke.mp3", Self.nukeAudio);
     router.get("/audio/victory.mp3", Self.victoryAudio);
     router.get("/audio/lost.mp3", Self.lostAudio);
+}
+
+pub fn logExtra(self: *Self, req: *httpz.Request, extra: []const u8) void {
+    // do some memory logging and stats here
+    self.game_mutex.lock();
+    const player = self.getPlayer(req);
+    const ru = std.os.getrusage(0);
+    std.log.info("[{}:{s}:{}:{}:{}] {s} {s} {s}", .{ std.time.timestamp(), @tagName(self.state), player, ru.maxrss, ru.maxrss - self.last_rss, @tagName(req.method), req.url.raw, extra });
+    self.last_rss = ru.maxrss;
+    self.game_mutex.unlock();
+}
+
+pub fn log(self: *Self, req: *httpz.Request, elapsedUs: i128) void {
+    // do some memory logging and stats here
+    self.game_mutex.lock();
+    const player = self.getPlayer(req);
+    const ru = std.os.getrusage(0);
+    std.log.info("[{}:{s}:{}:{}:{}] {s} {s} ({}µs)", .{ std.time.timestamp(), @tagName(self.state), player, ru.maxrss, ru.maxrss - self.last_rss, @tagName(req.method), req.url.raw, elapsedUs });
+    self.game_mutex.unlock();
+    self.last_rss = ru.maxrss;
+}
+
+pub fn logger(self: *Self, action: httpz.Action(*Self), req: *httpz.Request, res: *httpz.Response) !void {
+    // comment this debug out if you want to log the entry to each function - maybe for debugging some handle that hangs
+    // std.log.debug("[{}:{s}] {s} {s} START ..", .{ std.time.timestamp(), @tagName(self.state), @tagName(req.method), req.url.raw });
+    const t1 = std.time.microTimestamp();
+    defer self.log(req, std.time.microTimestamp() - t1);
+    return action(self, req, res);
 }
 
 /// newState(newState, emitEvent) will transition to a new state, and emit the given event
