@@ -7,7 +7,7 @@ const default_port = 3000;
 // always log .info, even in release modes
 // change this to .debug if you want extreme debugging
 pub const std_options = struct {
-    pub const log_level = .debug;
+    pub const log_level = .info;
 };
 
 pub fn usage() void {
@@ -88,7 +88,7 @@ pub fn main() !void {
     router.get("/favicon.ico", favicon);
 
     // test route to do a delay
-    router.get("/snooze", snooze);
+    // router.get("/snooze", snooze);
 
     // connect the game object to the router
     game.addRoutes(router);
