@@ -7,7 +7,7 @@ const default_port = 3000;
 // always log .info, even in release modes
 // change this to .debug if you want extreme debugging
 pub const std_options = struct {
-    pub const log_level = .info;
+    pub const log_level = .debug;
 };
 
 pub fn usage() void {
@@ -62,12 +62,12 @@ pub fn main() !void {
     var game = try Game.init(grid_x, grid_y, players, win, zero_wing);
     try game.startWatcher();
 
-    std.log.debug("Setting pool size to {}", .{32});
+    std.log.debug("Setting pool size to {}", .{Game.MAX_PLAYERS * 4});
     var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{
         .address = "0.0.0.0",
         .port = port,
         // .pool_size = Game.MAX_PLAYERS * 32, // allow up to 32 req/res pairs buffered for each player
-        .pool_size = 32, // allow up to 32 req/res pairs buffered for each player
+        .pool_size = Game.MAX_PLAYERS * 4, // allow up to 32 req/res pairs buffered for each player
         .grow_pool = false,
         .request = .{
             .max_body_size = 256,
