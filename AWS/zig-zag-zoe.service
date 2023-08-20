@@ -1,0 +1,60 @@
+{
+    "services": [
+        {
+            "serviceArn": "arn:aws:ecs:ap-southeast-2:492130783483:service/zig-zag-zoe/zig-zag-zoe-service",
+            "serviceName": "zig-zag-zoe-service",
+            "clusterArn": "arn:aws:ecs:ap-southeast-2:492130783483:cluster/zig-zag-zoe",
+            "loadBalancers": [],
+            "serviceRegistries": [],
+            "status": "ACTIVE",
+            "desiredCount": 1,
+            "runningCount": 0,
+            "pendingCount": 0,
+            "launchType": "EC2",
+            "taskDefinition": "arn:aws:ecs:ap-southeast-2:492130783483:task-definition/zig-zag-zoe-task:5",
+            "deploymentConfiguration": {
+                "deploymentCircuitBreaker": {
+                    "enable": false,
+                    "rollback": false
+                },
+                "maximumPercent": 200,
+                "minimumHealthyPercent": 100
+            },
+            "deployments": [
+                {
+                    "id": "ecs-svc/3290640219948224204",
+                    "status": "PRIMARY",
+                    "taskDefinition": "arn:aws:ecs:ap-southeast-2:492130783483:task-definition/zig-zag-zoe-task:5",
+                    "desiredCount": 1,
+                    "pendingCount": 0,
+                    "runningCount": 0,
+                    "failedTasks": 21,
+                    "createdAt": "2023-07-25T11:59:20.586000+10:00",
+                    "updatedAt": "2023-07-25T12:03:20.697000+10:00",
+                    "launchType": "EC2",
+                    "rolloutState": "IN_PROGRESS",
+                    "rolloutStateReason": "ECS deployment ecs-svc/3290640219948224204 in progress."
+                }
+            ],
+            "events": [
+                {
+                    "id": "db772609-78fb-4202-85a9-4935115d858c",
+                    "createdAt": "2023-07-25T11:59:26.466000+10:00",
+                    "message": "(service zig-zag-zoe-service) was unable to place a task because no container instance met all of its requirements. The closest matching (container-instance 38ce13e2011d45ef9096283417e5f1e2) is already using a port required by your task. For more information, see the Troubleshooting section of the Amazon ECS Developer Guide."
+                }
+            ],
+            "createdAt": "2023-07-25T11:59:20.586000+10:00",
+            "placementConstraints": [],
+            "placementStrategy": [],
+            "schedulingStrategy": "REPLICA",
+            "deploymentController": {
+                "type": "ECS"
+            },
+            "createdBy": "arn:aws:iam::492130783483:root",
+            "enableECSManagedTags": false,
+            "propagateTags": "NONE",
+            "enableExecuteCommand": false
+        }
+    ],
+    "failures": []
+}

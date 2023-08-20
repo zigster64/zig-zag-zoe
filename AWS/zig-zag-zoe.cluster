@@ -1,0 +1,19 @@
+{
+    "clusters": [
+        {
+            "clusterArn": "arn:aws:ecs:ap-southeast-2:492130783483:cluster/zig-zag-zoe",
+            "clusterName": "zig-zag-zoe",
+            "status": "ACTIVE",
+            "registeredContainerInstancesCount": 1,
+            "runningTasksCount": 1,
+            "pendingTasksCount": 0,
+            "activeServicesCount": 1,
+            "statistics": [],
+            "tags": [],
+            "settings": [],
+            "capacityProviders": [],
+            "defaultCapacityProviderStrategy": []
+        }
+    ],
+    "failures": []
+}

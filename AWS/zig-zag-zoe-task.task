@@ -1,0 +1,47 @@
+{
+    "taskDefinition": {
+        "taskDefinitionArn": "arn:aws:ecs:ap-southeast-2:492130783483:task-definition/zig-zag-zoe-task:5",
+        "containerDefinitions": [
+            {
+                "name": "zig-zag-zoe",
+                "image": "492130783483.dkr.ecr.ap-southeast-2.amazonaws.com/zig-zag-zoe",
+                "cpu": 0,
+                "portMappings": [
+                    {
+                        "containerPort": 3000,
+                        "hostPort": 80,
+                        "protocol": "tcp"
+                    }
+                ],
+                "essential": true,
+                "entryPoint": [],
+                "command": [],
+                "environment": [],
+                "mountPoints": [],
+                "volumesFrom": []
+            }
+        ],
+        "family": "zig-zag-zoe-task",
+        "revision": 5,
+        "volumes": [],
+        "status": "ACTIVE",
+        "requiresAttributes": [
+            {
+                "name": "com.amazonaws.ecs.capability.ecr-auth"
+            }
+        ],
+        "placementConstraints": [],
+        "compatibilities": [
+            "EXTERNAL",
+            "EC2"
+        ],
+        "requiresCompatibilities": [
+            "EC2"
+        ],
+        "cpu": "1024",
+        "memory": "128",
+        "registeredAt": "2023-07-18T15:45:35.973000+10:00",
+        "registeredBy": "arn:aws:iam::492130783483:root"
+    },
+    "tags": []
+}
