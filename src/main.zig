@@ -62,15 +62,18 @@ pub fn main() !void {
     var game = try Game.init(grid_x, grid_y, players, win, zero_wing);
     try game.startWatcher();
 
+    std.log.debug("Setting pool size to {}", .{32});
     var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{
         .address = "0.0.0.0",
         .port = port,
-        .pool_size = Game.MAX_PLAYERS,
+        // .pool_size = Game.MAX_PLAYERS * 32, // allow up to 32 req/res pairs buffered for each player
+        .pool_size = 32, // allow up to 32 req/res pairs buffered for each player
+        .grow_pool = false,
         .request = .{
             .max_body_size = 256,
         },
         .response = .{
-            .body_buffer_size = 100_000, // big enough for the biggest audio file
+            .body_buffer_size = 40_000, // big enough for the biggest audio file
             .header_buffer_size = 256,
         },
     }, &game);
@@ -84,9 +87,14 @@ pub fn main() !void {
     router.get("/styles.css", stylesCSS);
     router.get("/favicon.ico", favicon);
 
+    // test route to do a delay
+    router.get("/snooze", snooze);
+
     // connect the game object to the router
     game.addRoutes(router);
 
+    const ru = std.os.getrusage(0);
+    std.log.info("[{}:{s}:{}:{}:{}] {s} {s}", .{ std.time.timestamp(), @tagName(game.state), 0, ru.maxrss, ru.maxrss, "BOOT", "Initial Startup" });
     return server.listen();
 }
 
@@ -129,6 +137,13 @@ fn notFound(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
     game.logExtra(req, "(404 Not Found)");
     res.status = 404;
     res.body = "File not found";
+}
+
+fn snooze(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    _ = res;
+    _ = req;
+    _ = game;
+    std.time.sleep(std.time.ns_per_ms * 500);
 }
 
 fn indexHTML(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {

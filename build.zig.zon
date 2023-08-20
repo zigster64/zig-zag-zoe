@@ -7,7 +7,7 @@
             // .url = "https://github.com/zigster64/http.zig/archive/refs/heads/master.tar.gz",
             // .hash = "12204d254505fd33404d95da79024bcac378bfd558987a8f04bd2920af53e7aed768",
             .url = "https://github.com/zigster64/http.zig/archive/refs/heads/pool-overflow.tar.gz",
-            .hash = "12203d92919fbdd28dc773ec9c76e1e7ba64c35ead83998bfad57334e8e9b0270398",
+            .hash = "1220b28d5e9890d81dbc3bbd0c6e62ad0e9fbb855f8a760de5923a31e6e24547aa86"
         },
     },
 }
