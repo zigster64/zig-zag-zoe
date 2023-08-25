@@ -67,14 +67,22 @@ pub fn main() !void {
         .address = "0.0.0.0",
         .port = port,
         // .pool_size = Game.MAX_PLAYERS * 32, // allow up to 32 req/res pairs buffered for each player
-        .pool_size = Game.MAX_PLAYERS * 4, // allow up to 32 req/res pairs buffered for each player
-        .grow_pool = false,
+        .pool = .{
+            .min = Game.MAX_PLAYERS * 4,
+            .max = Game.MAX_PLAYERS * 24,
+            .timeout = 5000,
+        },
         .request = .{
             .max_body_size = 256,
+            .buffer_size = 1024,
+            .max_header_count = 32,
+            .max_param_count = 2,
+            .max_query_count = 1,
         },
         .response = .{
             .body_buffer_size = 40_000, // big enough for the biggest audio file
             .header_buffer_size = 256,
+            .max_header_count = 8,
         },
     }, &game);
     server.notFound(notFound);

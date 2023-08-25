@@ -278,42 +278,48 @@ fn getPlayer(self: *Self, req: *httpz.Request) u8 {
 fn zeroWing(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
-    res.body = @embedFile("images/zero-wing-gradient.jpg");
+    try res.write();
+    try res.writer().writeAll(@embedFile("images/zero-wing-gradient.jpg"));
 }
 
 fn yourTurnAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
     res.header("Content-Type", "audio/mpeg");
-    res.body = @embedFile("audio/your-turn.mp3");
+    try res.write();
+    try res.writer().writeAll(@embedFile("audio/your-turn.mp3"));
 }
 
 fn zeroWingAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
     res.header("Content-Type", "audio/mpeg");
-    res.body = @embedFile("audio/zero-wing.mp3");
+    try res.write();
+    try res.writer().writeAll(@embedFile("audio/zero-wing.mp3"));
 }
 
 fn nukeAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
     res.header("Content-Type", "audio/mpeg");
-    res.body = @embedFile("audio/nuke.mp3");
+    try res.write();
+    try res.writer().writeAll(@embedFile("audio/nuke.mp3"));
 }
 
 fn victoryAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
     res.header("Content-Type", "audio/mpeg");
-    res.body = @embedFile("audio/victory.mp3");
+    try res.write();
+    try res.writer().writeAll(@embedFile("audio/victory.mp3"));
 }
 
 fn lostAudio(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
     res.header("Content-Type", "audio/mpeg");
-    res.body = @embedFile("audio/lost.mp3");
+    try res.write();
+    try res.writer().writeAll(@embedFile("audio/lost.mp3"));
 }
 
 /// calcAudio calculates the name of the audio element that matches the current user state

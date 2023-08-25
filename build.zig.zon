@@ -4,10 +4,8 @@
 
     .dependencies = .{
         .http = .{
-            // .url = "https://github.com/zigster64/http.zig/archive/refs/heads/master.tar.gz",
-            // .hash = "12204d254505fd33404d95da79024bcac378bfd558987a8f04bd2920af53e7aed768",
-            .url = "https://github.com/zigster64/http.zig/archive/refs/heads/pool-overflow.tar.gz",
-            .hash = "1220b28d5e9890d81dbc3bbd0c6e62ad0e9fbb855f8a760de5923a31e6e24547aa86"
+            .url = "https://github.com/zigster64/http.zig/archive/refs/heads/master.tar.gz",
+            .hash = "1220c9fad8e745a0707946ddf70d827c422de5b7b7a9268773d6aae127a32dd304b1",
         },
     },
 }
