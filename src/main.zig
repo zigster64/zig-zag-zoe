@@ -142,7 +142,7 @@ fn errorHandler(game: *Game, req: *httpz.Request, res: *httpz.Response, err: any
 }
 
 fn notFound(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
-    std.log.info("Bad client {} tried for a thing not found - ban them", .{req.address.in.sa.addr});
+    // std.log.info("Bad client {} tried for a thing not found - ban them", .{req.address.in.sa.addr});
     game.logExtra(req, "(404 Not Found)");
     res.status = 404;
     res.body = "File not found";
