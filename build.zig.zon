@@ -4,8 +4,10 @@
 
     .dependencies = .{
         .http = .{
-            .url = "https://github.com/zigster64/http.zig/archive/refs/heads/master.tar.gz",
-            .hash = "1220a137b2bffbdcf6e4ca1451fb96c154b7ee64637cbee92dd2e8e452e66252f125",
+            // .url = "https://github.com/zigster64/http.zig/archive/refs/heads/master.tar.gz",
+            // .hash = "1220a137b2bffbdcf6e4ca1451fb96c154b7ee64637cbee92dd2e8e452e66252f125",
+            .url = "https://github.com/zigster64/http.zig/archive/refs/heads/thread-pool.tar.gz",
+            .hash = "1220e805f2eb202f505d5771643a8abb944b2a36cf2bbff49262b65a93710d6dc871",
         },
     },
 }

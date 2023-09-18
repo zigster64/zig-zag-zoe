@@ -4,18 +4,13 @@
 <head>
     <title>Zig Zag Zoe</title>
 
-    <script src="https://unpkg.com/htmx.org@1.9.2"
-        integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
-        crossorigin="anonymous"></script>
+    <script src="/htmx.min.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 
-    <meta name="app-version" version="0.11.0">
-    <meta fix="Use updated http.zig memory management">
-    <meta fix="Set pool buffer to 32 connections per player, instead of 1">
-    <meta fix="If no room left in the pool, then reject new connections">
-    <meta date="2023-AUG-20">
-
+    <meta name="app-version" version="0.11.1">
+    <meta fix="Use thread pool of 16 threads">
+    <meta date="2023-SEP-18">
 
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">

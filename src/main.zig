@@ -72,6 +72,7 @@ pub fn main() !void {
             .max = Game.MAX_PLAYERS * 24,
             .timeout = 5000,
         },
+        .thread_pool = Game.MAX_PLAYERS * 2,
         .request = .{
             .max_body_size = 256,
             .buffer_size = 1024,
@@ -80,7 +81,7 @@ pub fn main() !void {
             .max_query_count = 1,
         },
         .response = .{
-            .body_buffer_size = 40_000, // big enough for the biggest audio file
+            .body_buffer_size = 48_000, // big enough for the biggest file
             .header_buffer_size = 256,
             .max_header_count = 8,
         },
@@ -92,6 +93,7 @@ pub fn main() !void {
     var router = server.router();
     router.get("/", indexHTML);
     router.get("/index.html", indexHTML);
+    router.get("/htmx.min.js", htmx);
     router.get("/styles.css", stylesCSS);
     router.get("/favicon.ico", favicon);
 
@@ -158,6 +160,11 @@ fn snooze(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
 fn indexHTML(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
     game.log(req, 0);
     res.body = @embedFile("html/index.html");
+}
+
+fn htmx(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+    game.log(req, 0);
+    res.body = @embedFile("html/htmx.min.js");
 }
 
 fn stylesCSS(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {

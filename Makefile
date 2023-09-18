@@ -16,8 +16,8 @@ run-fast:
 docker: docker-build docker-push
 
 docker-build:
-	#zig build -Dtarget=aarch64-linux-musl -Doptimize=ReleaseFast
-	zig build -Dtarget=aarch64-linux-musl -Doptimize=Debug
+	zig build -Dtarget=aarch64-linux-musl -Doptimize=ReleaseFast
+	#zig build -Dtarget=aarch64-linux-musl -Doptimize=Debug
 	ls -l zig-out/bin/zig-zag-zoe
 	file zig-out/bin/zig-zag-zoe
 	docker build -t zig-zag-zoe -f Docker/Dockerfile .
