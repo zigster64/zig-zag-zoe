@@ -345,7 +345,7 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
             res.body = zts.s(tmpl, "login");
         },
         .running => {
-            try zts.printSection(tmpl, "running", .{
+            try zts.print(tmpl, "running", .{
                 .current_player = self.current_player,
                 .audio = self.calcAudio(player),
             }, res.writer());
@@ -373,7 +373,7 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     switch (self.state) {
         .init => {
             const tmpl = @embedFile("html/setup_game.html");
-            try zts.printSection(tmpl, "form", .{
+            try zts.print(tmpl, "form", .{
                 .x = self.grid_x,
                 .y = self.grid_y,
                 .players = self.number_of_players,
@@ -434,7 +434,7 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
             if (value != 0) {
                 if (self.player_mode == .zeroWing and self.state == .running and player == self.current_player) {
                     // BUT ! we have zeroWing powers this turn, so we can change another player's piece to our piece !
-                    try zts.printSection(tmpl, "clickable", .{
+                    try zts.print(tmpl, "clickable", .{
                         .class = "grid-square-clickable",
                         .x = x + 1,
                         .y = y + 1,
@@ -443,7 +443,7 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
                     continue;
                 }
 
-                try zts.printSection(tmpl, "square", .{
+                try zts.print(tmpl, "square", .{
                     .class = "grid-square",
                     .player = value,
                 }, w);
@@ -452,7 +452,7 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
 
             // we are the active player, and the square is not used yet
             if (self.state == .running and player == self.current_player) {
-                try zts.printSection(tmpl, "clickable", .{
+                try zts.print(tmpl, "clickable", .{
                     .class = "grid-square-clickable",
                     .x = x + 1,
                     .y = y + 1,
@@ -462,7 +462,7 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
             }
 
             // empty square that we cant click on,because its not your turn
-            try zts.printSection(tmpl, "square", .{
+            try zts.print(tmpl, "square", .{
                 .class = "grid-square",
                 .player = value,
             }, w);
@@ -470,13 +470,13 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     }
 
     // try w.writeAll(@embedFile("html/board/end-grid.html"));
-    try zts.writeSection(tmpl, "end", w);
+    try zts.write(tmpl, "end", w);
 
     if (self.current_player == player) {
         switch (self.player_mode) {
-            .normal => try zts.writeSection(tmpl, "your-move", w),
-            .zeroWing => try zts.writeSection(tmpl, "zero-wing-enabled", w),
-            .nuke => try zts.writeSection(tmpl, "set-us-up-the-bomb", w),
+            .normal => try zts.write(tmpl, "your-move", w),
+            .zeroWing => try zts.write(tmpl, "zero-wing-enabled", w),
+            .nuke => try zts.write(tmpl, "set-us-up-the-bomb", w),
         }
     }
 
@@ -500,7 +500,7 @@ fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         try zts.writeHeader(wait_tmpl, w);
         for (0..self.number_of_players) |p| {
             if (!self.isLoggedIn(p + 1)) {
-                try zts.printSection(wait_tmpl, "waiting-player", .{
+                try zts.print(wait_tmpl, "waiting-player", .{
                     .player = p + 1,
                 }, w);
             }
@@ -513,7 +513,7 @@ fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     for (0..self.number_of_players) |p| {
         if (!self.isLoggedIn(p + 1)) {
-            try zts.printSection(form_tmpl, "select-player", .{
+            try zts.print(form_tmpl, "select-player", .{
                 .player = p + 1,
             }, w);
         }

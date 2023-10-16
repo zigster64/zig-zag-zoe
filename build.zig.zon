@@ -9,7 +9,7 @@
         },
         .zts = .{
             .url = "https://github.com/zigster64/zts/archive/refs/heads/master.tar.gz",
-            .hash = "1220d6021e570e69926fc7d0a17b222560f3b697fb04bdf14d79d6ef644e6851d3a9",
+            .hash = "12208cdef41c8b93e72ac9e1f2bbf56c84efd33d826826eab837ac2970313d0824a1",
         },
     },
 }
