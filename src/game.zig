@@ -3,6 +3,7 @@ const httpz = @import("httpz");
 const Board = @import("board.zig");
 const Errors = @import("errors.zig");
 const uuid = @import("uuid.zig");
+const zts = @import("zts");
 
 const start_countdown_timer: i64 = 30;
 const initial_countdown_timer: i64 = 120;
@@ -413,10 +414,16 @@ fn calcBoardClass(self: *Self, player: u8) []const u8 {
 fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     const w = res.writer();
 
-    try w.print(@embedFile("html/board/start-grid.x.html"), .{
+    const tmpl = @embedFile("html/board/board.html");
+
+    try zts.printHeader(tmpl, .{
         .class = self.calcBoardClass(player),
         .columns = self.grid_x,
-    });
+    }, w);
+    // try w.print(@embedFile("html/board/start-grid.x.html"), .{
+    //     .class = self.calcBoardClass(player),
+    //     .columns = self.grid_x,
+    // });
 
     for (0..self.grid_y) |y| {
         for (0..self.grid_x) |x| {
@@ -429,42 +436,63 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
             if (value != 0) {
                 if (self.player_mode == .zeroWing and self.state == .running and player == self.current_player) {
                     // BUT ! we have zeroWing powers this turn, so we can change another player's piece to our piece !
-                    try w.print(@embedFile("html/board/clickable-square.x.html"), .{
+                    try zts.printSection(tmpl, "clickable", .{
                         .class = "grid-square-clickable",
                         .x = x + 1,
                         .y = y + 1,
                         .player = value,
-                    });
+                    }, w);
+                    // try w.print(@embedFile("html/board/clickable-square.x.html"), .{
+                    //     .class = "grid-square-clickable",
+                    //     .x = x + 1,
+                    //     .y = y + 1,
+                    //     .player = value,
+                    // });
                     continue;
                 }
 
-                try w.print(@embedFile("html/board/square.x.html"), .{
+                try zts.printSection(tmpl, "square", .{
                     .class = "grid-square",
                     .player = value,
-                });
+                }, w);
+                // try w.print(@embedFile("html/board/square.x.html"), .{
+                //     .class = "grid-square",
+                //     .player = value,
+                // });
                 continue;
             }
 
             // we are the active player, and the square is not used yet
             if (self.state == .running and player == self.current_player) {
-                try w.print(@embedFile("html/board/clickable-square.x.html"), .{
+                try zts.printSection(tmpl, "clickable", .{
                     .class = "grid-square-clickable",
                     .x = x + 1,
                     .y = y + 1,
                     .player = value,
-                });
+                }, w);
+                // try w.print(@embedFile("html/board/clickable-square.x.html"), .{
+                //     .class = "grid-square-clickable",
+                //     .x = x + 1,
+                //     .y = y + 1,
+                //     .player = value,
+                // });
                 continue;
             }
 
             // empty square that we cant click on,because its not your turn
-            try w.print(@embedFile("html/board/square.x.html"), .{
+            try zts.printSection(tmpl, "square", .{
                 .class = "grid-square",
                 .player = value,
-            });
+            }, w);
+            // try w.print(@embedFile("html/board/square.x.html"), .{
+            //     .class = "grid-square",
+            //     .player = value,
+            // });
         }
     }
 
-    try w.writeAll(@embedFile("html/board/end-grid.html"));
+    // try w.writeAll(@embedFile("html/board/end-grid.html"));
+    try zts.writeSection(tmpl, "end", w);
 
     if (self.current_player == player) {
         switch (self.player_mode) {

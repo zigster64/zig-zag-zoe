@@ -26,6 +26,7 @@ pub fn build(b: *std.Build) void {
 
     // see build.zig.zon
     exe.addModule("httpz", b.dependency("http", .{}).module("httpz"));
+    exe.addModule("zts", b.dependency("zts", .{}).module("zts"));
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

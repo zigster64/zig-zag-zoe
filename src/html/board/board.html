@@ -1,0 +1,26 @@
+<div class="{[class]s}">
+    <div class="grid-container" style="--Cols:{[columns]}">
+        .square
+        <div class="{[class]s} player{[player]}">
+            {[player]}
+        </div>
+
+        .clickable
+        <div class="{[class]s} player{[player]}" hx-post="/square/{[x]}/{[y]}"
+            hx-headers='js:{{"x-player": getPlayer()}}'>
+            {[player]}
+        </div>
+
+        .grid-end
+    </div>
+</div>
+
+.zero-wing-enabled
+<div class="yellow">Zero Wing Enabled<br />all base are on<br /></div>
+
+.your-move
+<div class="green small">Your move ..</div>
+
+.set-us-the-bomb
+<div class="red">Someone set us up the bomb<br />careful !<br />.. make your move, ha ha
+</div>
