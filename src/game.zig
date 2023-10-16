@@ -1,9 +1,9 @@
 const std = @import("std");
 const httpz = @import("httpz");
+const zts = @import("zts");
 const Board = @import("board.zig");
 const Errors = @import("errors.zig");
 const uuid = @import("uuid.zig");
-const zts = @import("zts");
 
 const start_countdown_timer: i64 = 30;
 const initial_countdown_timer: i64 = 120;
@@ -335,29 +335,30 @@ fn header(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     defer self.game_mutex.unlock();
 
     const player = self.getPlayer(req);
+    const tmpl = @embedFile("html/header/template.html");
 
     switch (self.state) {
         .init => {
-            res.body = @embedFile("html/header/init.html");
+            res.body = zts.s(tmpl, "init");
         },
         .login => {
-            res.body = @embedFile("html/header/login.html");
+            res.body = zts.s(tmpl, "login");
         },
         .running => {
-            try res.writer().print(@embedFile("html/header/running.x.html"), .{
+            try zts.printSection(tmpl, "running", .{
                 .current_player = self.current_player,
                 .audio = self.calcAudio(player),
-            });
+            }, res.writer());
         },
         .winner => {
             if (player == self.current_player) {
-                res.body = @embedFile("html/header/winner-victory.html");
+                res.body = zts.s(tmpl, "winner-victory");
             } else {
-                res.body = @embedFile("html/header/winner-lost.html");
+                res.body = zts.s(tmpl, "winner-lost");
             }
         },
         .stalemate => {
-            res.body = @embedFile("html/header/stalemate.html");
+            res.body = zts.s(tmpl, "stalemate");
         },
     }
 }
@@ -371,14 +372,15 @@ fn app(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
 
     switch (self.state) {
         .init => {
-            try res.writer().print(@embedFile("html/setup/setup_game.x.html"), .{
+            const tmpl = @embedFile("html/setup_game.html");
+            try zts.printSection(tmpl, "form", .{
                 .x = self.grid_x,
                 .y = self.grid_y,
                 .players = self.number_of_players,
                 .win = self.needed_to_win,
                 .zero_wing = self.zero_wing_chance,
                 .nuke = self.nuke_chance,
-            });
+            }, res.writer());
         },
         .login => {
             // if this user is logged in, then show a list of who is logged in
@@ -414,16 +416,12 @@ fn calcBoardClass(self: *Self, player: u8) []const u8 {
 fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
     const w = res.writer();
 
-    const tmpl = @embedFile("html/board/board.html");
+    const tmpl = @embedFile("html/board/template.html");
 
     try zts.printHeader(tmpl, .{
         .class = self.calcBoardClass(player),
         .columns = self.grid_x,
     }, w);
-    // try w.print(@embedFile("html/board/start-grid.x.html"), .{
-    //     .class = self.calcBoardClass(player),
-    //     .columns = self.grid_x,
-    // });
 
     for (0..self.grid_y) |y| {
         for (0..self.grid_x) |x| {
@@ -442,12 +440,6 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
                         .y = y + 1,
                         .player = value,
                     }, w);
-                    // try w.print(@embedFile("html/board/clickable-square.x.html"), .{
-                    //     .class = "grid-square-clickable",
-                    //     .x = x + 1,
-                    //     .y = y + 1,
-                    //     .player = value,
-                    // });
                     continue;
                 }
 
@@ -455,10 +447,6 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
                     .class = "grid-square",
                     .player = value,
                 }, w);
-                // try w.print(@embedFile("html/board/square.x.html"), .{
-                //     .class = "grid-square",
-                //     .player = value,
-                // });
                 continue;
             }
 
@@ -470,12 +458,6 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
                     .y = y + 1,
                     .player = value,
                 }, w);
-                // try w.print(@embedFile("html/board/clickable-square.x.html"), .{
-                //     .class = "grid-square-clickable",
-                //     .x = x + 1,
-                //     .y = y + 1,
-                //     .player = value,
-                // });
                 continue;
             }
 
@@ -484,10 +466,6 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
                 .class = "grid-square",
                 .player = value,
             }, w);
-            // try w.print(@embedFile("html/board/square.x.html"), .{
-            //     .class = "grid-square",
-            //     .player = value,
-            // });
         }
     }
 
@@ -496,9 +474,9 @@ fn showBoard(self: *Self, player: u8, res: *httpz.Response) !void {
 
     if (self.current_player == player) {
         switch (self.player_mode) {
-            .normal => try w.writeAll(@embedFile("html/board/your-move.html")),
-            .zeroWing => try w.writeAll(@embedFile("html/board/zero-wing-enabled.html")),
-            .nuke => try w.writeAll(@embedFile("html/board/setup-us-the-bomb.html")),
+            .normal => try zts.writeSection(tmpl, "your-move", w),
+            .zeroWing => try zts.writeSection(tmpl, "zero-wing-enabled", w),
+            .nuke => try zts.writeSection(tmpl, "set-us-up-the-bomb", w),
         }
     }
 
@@ -518,29 +496,28 @@ fn loginForm(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     const player = self.getPlayer(req);
 
     if (player > 0) {
-        try w.writeAll(@embedFile("html/login/waiting-title.html"));
+        const wait_tmpl = @embedFile("html/login/waiting.html");
+        try zts.writeHeader(wait_tmpl, w);
         for (0..self.number_of_players) |p| {
             if (!self.isLoggedIn(p + 1)) {
-                try w.print(@embedFile("html/login/waiting-player.x.html"), .{
+                try zts.printSection(wait_tmpl, "waiting-player", .{
                     .player = p + 1,
-                });
+                }, w);
             }
         }
-        try w.writeAll(@embedFile("html/login/waiting-end.html"));
         return;
     }
 
-    try w.writeAll(@embedFile("html/login/login-form-start.html"));
+    const form_tmpl = @embedFile("html/login/form.html");
+    try zts.writeHeader(form_tmpl, w);
 
     for (0..self.number_of_players) |p| {
         if (!self.isLoggedIn(p + 1)) {
-            try w.print(@embedFile("html/login/login-form-select-player.x.html"), .{
+            try zts.printSection(form_tmpl, "select-player", .{
                 .player = p + 1,
-            });
+            }, w);
         }
     }
-
-    try w.writeAll(@embedFile("html/login/login-form-end.html"));
 }
 
 /// login() POST handler logs this player in, and returns the playerID

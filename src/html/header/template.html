@@ -1,0 +1,25 @@
+.init
+Set us up a New Game
+<script>setPlayer('')</script>
+
+.login
+Waiting for Logins
+
+.running
+<div>Player {[current_player]}'s turn</div>
+{[audio]s}
+
+.winner-victory
+<span class="green">Victory !</span>
+<div>
+    Take off every ZIG
+    <p class="yellow">For great justice</p>
+</div>
+<script>sing(victoryAudio, 1)</script>
+
+.winner-lost
+<span class="red">You Lost !</span>
+<script>sing(lostAudio, 1)</script>
+
+.stalemate
+<span class="yellow">Stalemate !</span>
