@@ -53,11 +53,6 @@ There are a few lingering bugs that I havent got around to fixing yet.
 Audio support on iOS + Safari is a lost cause - can fix it, but it requires a lot of JS code, and I figure that is outside the
 scope of a nice clean Zig application that Im trying to build here.
 
-There may also be a persistent bug where the CPU suddenly spikes to 100% and stays there - at least it does on AWS, but only
-after 2-3 days running. Dont know if its fixed yet, but still looking into that.
-
-Would appreciate any feedback on how to debug that in a running docker container on AWS :)
-
 Also appreciate any other thrashing / trying to break the application, as it all helps make the Zig http ecosystem much 
 more robust.  Thanks.
 
