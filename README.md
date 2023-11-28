@@ -4,7 +4,7 @@ Multiplayer TicTacToe - in Zig - using HTMX for that zero-javascript experience
 Online demo here
 http://zig-zag-zoe.com
 
-.. (running on a t4g-nano instance on AWS - Linux ARM64, with 512MB memory )
+.. (running on a t4g-nano instance on AWS - Linux ARM64, using less than 8mb memory for the whole container)
 
 ** Uses Latest Zig 0.11.0 official release **
 
