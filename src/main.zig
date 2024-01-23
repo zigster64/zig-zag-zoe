@@ -72,7 +72,7 @@ pub fn main() !void {
         //     .max = Game.MAX_PLAYERS * 24,
         //     .timeout = 5000,
         // },
-        .thread_pool = Game.MAX_PLAYERS * 2,
+        // .thread_pool = Game.MAX_PLAYERS * 2,
         .request = .{
             .max_body_size = 256,
             .buffer_size = 1024,

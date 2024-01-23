@@ -5,12 +5,13 @@
 
     .dependencies = .{
         .httpz = .{
-            .url = "https://github.com/zigster64/http.zig/archive/refs/heads/blocking.tar.gz",
+            // .url = "git+https://github.com/zigster64/http.zig#master",
             // .hash = "1220a06b79fe8996ccfab3017f535f0ebc4976055e5b753fdfb2d8b0830aeb2d9a32",
+            .url = "git+https://github.com/zigster64/http.zig#blocking",
             .hash = "1220b9cb100296f9ecbea1d5d335a074884e978c2f4fa9781cdeec47e2d222119b65",
         },
         .zts = .{
-            .url = "https://github.com/zigster64/zts/archive/refs/heads/master.tar.gz",
+            .url = "git+https://github.com/zigster64/zts#main",
             .hash = "1220864472b1642b73155481ac7fe274c891816bd182a8853f378d0aefd42ef44c33",
         },
     },
