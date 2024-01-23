@@ -18,7 +18,7 @@ pub fn usage() void {
 pub fn main() !void {
     var port: u16 = default_port;
 
-    var env_port = std.os.getenv("PORT");
+    const env_port = std.os.getenv("PORT");
     if (env_port != null and env_port.?.len > 0) {
         port = try std.fmt.parseInt(u16, env_port.?, 10);
         std.log.debug("Port set to {} via ENV\n", .{port});
@@ -53,11 +53,11 @@ pub fn main() !void {
     try printValidAddresses(allocator, port);
 
     // TODO - allow grid size and player count to be config params
-    var grid_x: u8 = 3;
-    var grid_y: u8 = 3;
-    var players: u8 = 2;
-    var win: u8 = 3;
-    var zero_wing: u8 = 0;
+    const grid_x: u8 = 3;
+    const grid_y: u8 = 3;
+    const players: u8 = 2;
+    const win: u8 = 3;
+    const zero_wing: u8 = 0;
 
     var game = try Game.init(grid_x, grid_y, players, win, zero_wing);
     try game.startWatcher();
@@ -67,12 +67,12 @@ pub fn main() !void {
         .address = "0.0.0.0",
         .port = port,
         // .pool_size = Game.MAX_PLAYERS * 32, // allow up to 32 req/res pairs buffered for each player
-        .pool = .{
-            .min = Game.MAX_PLAYERS * 4,
-            .max = Game.MAX_PLAYERS * 24,
-            .timeout = 5000,
-        },
-        .thread_pool = Game.MAX_PLAYERS * 2,
+        // .pool = .{
+        //     .min = Game.MAX_PLAYERS * 4,
+        //     .max = Game.MAX_PLAYERS * 24,
+        //     .timeout = 5000,
+        // },
+        // .thread_pool = Game.MAX_PLAYERS * 2,
         .request = .{
             .max_body_size = 256,
             .buffer_size = 1024,

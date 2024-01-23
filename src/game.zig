@@ -103,7 +103,7 @@ pub fn startWatcher(self: *Self) !void {
 fn watcherThread(self: *Self) void {
     while (true) {
         self.game_mutex.lock();
-        var expiry_time = self.expiry_time;
+        const expiry_time = self.expiry_time;
         const state = self.state;
         self.game_mutex.unlock();
         const t = std.time.timestamp();
@@ -248,7 +248,7 @@ fn clock(self: *Self, stream: std.net.Stream) !void {
 
     const w = stream.writer();
     try w.writeAll("event: clock\n");
-    var remaining = self.expiry_time - std.time.timestamp();
+    const remaining = self.expiry_time - std.time.timestamp();
     if (self.state == .running and remaining > 0) {
         try w.print("data: {d} seconds remaining ...\n\n", .{remaining});
     } else {
@@ -695,7 +695,7 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     defer self.event_mutex.unlock();
 
     while (true) {
-        var next_clock: u64 = switch (self.state) {
+        const next_clock: u64 = switch (self.state) {
             .running, .winner, .stalemate => 1,
             .login => 30,
             .init => 60,
