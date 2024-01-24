@@ -7,7 +7,7 @@
         .httpz = .{
             // .url = "git+https://github.com/zigster64/http.zig#master",
             // .hash = "1220a06b79fe8996ccfab3017f535f0ebc4976055e5b753fdfb2d8b0830aeb2d9a32",
-            .url = "git+https://github.com/zigster64/http.zig#blocking",
+            .url = "git+https://github.com/karseguin/http.zig#blocking",
             .hash = "1220b9cb100296f9ecbea1d5d335a074884e978c2f4fa9781cdeec47e2d222119b65",
         },
         .zts = .{
