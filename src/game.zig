@@ -684,8 +684,13 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
         std.log.info("(event-source) started at {} now exiting", .{start_time});
     }
 
-    var stream = try res.startEventStream();
+    res.disown();
+    const stream = try res.startEventStream();
+    const thread = try std.Thread.spawn(.{}, eventsLoop, .{ self, stream });
+    thread.detach();
+}
 
+fn eventsLoop(self: *Self, stream: anytype) !void {
     // on initial connect, send the clock details, and send the last event processed
     try self.clock(stream);
     try stream.writer().print("event: update\ndata: {s}\n\n", .{@tagName(self.last_event)});
