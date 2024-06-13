@@ -149,6 +149,7 @@ fn htmx(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
 
 fn stylesCSS(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
     game.log(req, 0);
+    res.header("Content-Type", "text/css");
     res.body = @embedFile("html/styles.css");
 }
 

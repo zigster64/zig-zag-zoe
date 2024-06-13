@@ -35,3 +35,9 @@ ecs-service-redeploy:
 	aws ecs update-service --profile ${AWS_PROFILE} --cluster zig-zag-zoe --service zig-zag-zoe-service --task-definition zig-zag-zoe-task
 
 build-and-launch: docker-build docker-push ecs-service-redeploy
+
+bastille:
+	zig-build -Doptimize=ReleaseSmall
+	bastille cp zzz zig-out/bin/zig-zag-zoe /root/bin
+	bastille ls zzz 
+

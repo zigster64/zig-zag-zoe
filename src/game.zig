@@ -275,6 +275,7 @@ fn getPlayer(self: *Self, req: *httpz.Request) u8 {
 fn zeroWing(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     _ = self;
     _ = req;
+    res.header("Content-Type", "image/jpeg");
     res.body = @embedFile("images/zero-wing-gradient.jpg");
 }
 
