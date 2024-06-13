@@ -97,7 +97,7 @@ fn printValidAddresses(allocator: std.mem.Allocator, port: u16) !void {
     const hostname = try std.posix.gethostname(&hostBuffer);
     std.log.info("- http://{s}:{}", .{ hostname, port });
 
-    var addressList = try std.net.getAddressList(allocator, hostname, port);
+    var addressList = std.net.getAddressList(allocator, hostname, port) catch return;
     defer addressList.deinit();
 
     var uniqueIPv4Addresses = std.AutoHashMap(std.net.Ip4Address, bool).init(allocator);
