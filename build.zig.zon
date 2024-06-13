@@ -1,18 +1,17 @@
 .{
     .name = "zig-zag-zoe",
-    .version = "0.1.0",
+    .version = "0.1.13",
     .paths = .{""},
 
     .dependencies = .{
         .httpz = .{
-             .url = "git+https://github.com/zigster64/http.zig#master",
-             .hash = "1220a06b79fe8996ccfab3017f535f0ebc4976055e5b753fdfb2d8b0830aeb2d9a32",
-            // .url = "git+https://github.com/karseguin/http.zig#blocking",
-            // .hash = "1220b9cb100296f9ecbea1d5d335a074884e978c2f4fa9781cdeec47e2d222119b65",
+             // .url = "git+https://github.com/zigster64/http.zig#master",
+             .url = "git+https://github.com/karlseguin/http.zig#master",
+             .hash = "12206d8d2a7f2535a7d48872eaf43911ead71ba05456f97363ae25e4f057a985975f",
         },
         .zts = .{
             .url = "git+https://github.com/zigster64/zts#main",
-            .hash = "1220864472b1642b73155481ac7fe274c891816bd182a8853f378d0aefd42ef44c33",
+            .hash = "122097f35c2d1aa158464a2c6e30f76ca09f747596881cba3f86627195135dcbe70e",
         },
     },
 }
