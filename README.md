@@ -6,17 +6,24 @@ http://zig-zag-zoe.com
 
 .. (running on a t4g-nano instance on AWS - Linux ARM64, using less than 2mb memory for the whole container)
 
-** Uses Latest Zig 0.11.0 official release **
+** Uses Latest Zig 0.12.0 official release **
 
 
 ![screenshot](https://github.com/zigster64/zig-zag-zoe/blob/main/src/images/zzz-screenshot.jpg)
 
 # Install
 
-Get the latest Zig 0.11.0 release installed :
+Get Zig - https://ziglang.org/download/
 
-https://ziglang.org/download/
+ZigZagZoe now tracks :
+- Zig 0.12.dev from nightly builds
 
+Last successful build / test using 0.12.0-dev.2139+e025ad7b4
+
+- http.zig #blocking branch with .hash = "1220b9cb100296f9ecbea1d5d335a074884e978c2f4fa9781cdeec47e2d222119b65",
+
+
+Is not currently working with the non-blocking / async branch of http.zig
 
 
 ```
@@ -38,6 +45,12 @@ zig build run
 Now point your browsers at http://localhost:3000
 
 .. or the equivalent address on the local network
+
+On boot, the system will print a list of valid URLs that should be able to find the game.
+
+Note that for multi-user play, you must bring up multiple browser tabs. Works best if you 
+spawn a couple of new windows from the browser, and shrink them so they can sit side by side.
+
 
 # How to Play
 
