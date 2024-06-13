@@ -170,9 +170,7 @@ pub fn logExtra(self: *Self, req: *httpz.Request, extra: []const u8) void {
     // do some memory logging and stats here
     self.game_mutex.lock();
     const player = self.getPlayer(req);
-    const ru = std.posix.getrusage(0);
-    std.log.info("[{}:{s}:{}:{}:{}] {s} {s} {s}", .{ std.time.timestamp(), @tagName(self.state), player, ru.maxrss, ru.maxrss - self.last_rss, @tagName(req.method), req.url.raw, extra });
-    self.last_rss = ru.maxrss;
+    std.log.info("[{}:{s}:{}] {s} {s} {s}", .{ std.time.timestamp(), @tagName(self.state), player, @tagName(req.method), req.url.raw, extra });
     self.game_mutex.unlock();
 }
 
@@ -180,10 +178,8 @@ pub fn log(self: *Self, req: *httpz.Request, elapsedUs: i128) void {
     // do some memory logging and stats here
     self.game_mutex.lock();
     const player = self.getPlayer(req);
-    const ru = std.posix.getrusage(0);
-    std.log.info("[{}:{s}:{}:{}:{}] {s} {s} ({}µs)", .{ std.time.timestamp(), @tagName(self.state), player, ru.maxrss, ru.maxrss - self.last_rss, @tagName(req.method), req.url.raw, elapsedUs });
+    std.log.info("[{}:{s}:{}] {s} {s} ({}µs)", .{ std.time.timestamp(), @tagName(self.state), player, @tagName(req.method), req.url.raw, elapsedUs });
     self.game_mutex.unlock();
-    self.last_rss = ru.maxrss;
 }
 
 pub fn logger(self: *Self, action: httpz.Action(*Self), req: *httpz.Request, res: *httpz.Response) !void {

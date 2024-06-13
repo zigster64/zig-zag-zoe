@@ -84,8 +84,7 @@ pub fn main() !void {
     // connect the game object to the router
     game.addRoutes(router);
 
-    const ru = std.posix.getrusage(0);
-    std.log.info("[{}:{s}:{}:{}:{}] {s} {s}", .{ std.time.timestamp(), @tagName(game.state), 0, ru.maxrss, ru.maxrss, "BOOT", "Initial Startup" });
+    std.log.info("[{}:{s}:{}] {s} {s}", .{ std.time.timestamp(), @tagName(game.state), 0, "BOOT", "Initial Startup" });
     return server.listen();
 }
 
