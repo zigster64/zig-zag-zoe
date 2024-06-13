@@ -70,7 +70,7 @@ pub fn init(grid_x: u8, grid_y: u8, players: u8, needed_to_win: u8, zero_wing: u
 
     // seed the RNG
     var os_seed: u64 = undefined;
-    try std.os.getrandom(std.mem.asBytes(&os_seed));
+    try std.posix.getrandom(std.mem.asBytes(&os_seed));
 
     var s = Self{
         .board = try Board.init(grid_x, grid_y),
@@ -170,7 +170,7 @@ pub fn logExtra(self: *Self, req: *httpz.Request, extra: []const u8) void {
     // do some memory logging and stats here
     self.game_mutex.lock();
     const player = self.getPlayer(req);
-    const ru = std.os.getrusage(0);
+    const ru = std.posix.getrusage(0);
     std.log.info("[{}:{s}:{}:{}:{}] {s} {s} {s}", .{ std.time.timestamp(), @tagName(self.state), player, ru.maxrss, ru.maxrss - self.last_rss, @tagName(req.method), req.url.raw, extra });
     self.last_rss = ru.maxrss;
     self.game_mutex.unlock();
@@ -180,7 +180,7 @@ pub fn log(self: *Self, req: *httpz.Request, elapsedUs: i128) void {
     // do some memory logging and stats here
     self.game_mutex.lock();
     const player = self.getPlayer(req);
-    const ru = std.os.getrusage(0);
+    const ru = std.posix.getrusage(0);
     std.log.info("[{}:{s}:{}:{}:{}] {s} {s} ({}µs)", .{ std.time.timestamp(), @tagName(self.state), player, ru.maxrss, ru.maxrss - self.last_rss, @tagName(req.method), req.url.raw, elapsedUs });
     self.game_mutex.unlock();
     self.last_rss = ru.maxrss;
@@ -685,12 +685,16 @@ fn events(self: *Self, req: *httpz.Request, res: *httpz.Response) !void {
     }
 
     res.disown();
-    const stream = try res.startEventStream();
-    const thread = try std.Thread.spawn(.{}, eventsLoop, .{ self, stream });
-    thread.detach();
+    try res.startEventStream(self, eventsLoopWrapper);
 }
 
-fn eventsLoop(self: *Self, stream: anytype) !void {
+fn eventsLoopWrapper(self: *Self, stream: std.net.Stream) void {
+    eventsLoop(self, stream) catch |err| {
+        std.log.err("eventsLoopWrapper: {}", .{err});
+    };
+}
+
+fn eventsLoop(self: *Self, stream: std.net.Stream) !void {
     // on initial connect, send the clock details, and send the last event processed
     try self.clock(stream);
     try stream.writer().print("event: update\ndata: {s}\n\n", .{@tagName(self.last_event)});

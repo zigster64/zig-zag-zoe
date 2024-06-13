@@ -6,19 +6,19 @@ const default_port = 3000;
 
 // always log .info, even in release modes
 // change this to .debug if you want extreme debugging
-pub const std_options = struct {
-    pub const log_level = .info;
+pub const std_options = std.Options{
+    .log_level = .info,
 };
 
 pub fn usage() void {
     std.debug.print("USAGE: zig-zag-zoe [-p PORTNUMBER]\n", .{});
-    std.debug.print("       or use the PORT env var to set the port, for like Docker or whatever\n", .{});
+    std.debug.print("       or use the PORT env var to set the port\n", .{});
 }
 
 pub fn main() !void {
     var port: u16 = default_port;
 
-    const env_port = std.os.getenv("PORT");
+    const env_port = std.posix.getenv("PORT");
     if (env_port != null and env_port.?.len > 0) {
         port = try std.fmt.parseInt(u16, env_port.?, 10);
         std.log.debug("Port set to {} via ENV\n", .{port});
@@ -60,31 +60,12 @@ pub fn main() !void {
     const zero_wing: u8 = 0;
 
     var game = try Game.init(grid_x, grid_y, players, win, zero_wing);
-    try game.startWatcher();
+    // try game.startWatcher();
 
-    std.log.debug("Setting pool size to {}", .{Game.MAX_PLAYERS * 4});
+    // std.log.debug("Setting pool size to {}", .{Game.MAX_PLAYERS * 4});
     var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{
         .address = "0.0.0.0",
         .port = port,
-        // .pool_size = Game.MAX_PLAYERS * 32, // allow up to 32 req/res pairs buffered for each player
-        // .pool = .{
-        //     .min = Game.MAX_PLAYERS * 4,
-        //     .max = Game.MAX_PLAYERS * 24,
-        //     .timeout = 5000,
-        // },
-        // .thread_pool = Game.MAX_PLAYERS * 2,
-        .request = .{
-            .max_body_size = 256,
-            .buffer_size = 1024,
-            .max_header_count = 32,
-            .max_param_count = 2,
-            .max_query_count = 1,
-        },
-        .response = .{
-            .body_buffer_size = 48_000, // big enough for the biggest file
-            .header_buffer_size = 256,
-            .max_header_count = 8,
-        },
     }, &game);
     server.notFound(notFound);
     server.errorHandler(errorHandler);
@@ -103,7 +84,7 @@ pub fn main() !void {
     // connect the game object to the router
     game.addRoutes(router);
 
-    const ru = std.os.getrusage(0);
+    const ru = std.posix.getrusage(0);
     std.log.info("[{}:{s}:{}:{}:{}] {s} {s}", .{ std.time.timestamp(), @tagName(game.state), 0, ru.maxrss, ru.maxrss, "BOOT", "Initial Startup" });
     return server.listen();
 }
@@ -113,8 +94,8 @@ fn printValidAddresses(allocator: std.mem.Allocator, port: u16) !void {
 
     // do some digging to get a list of IPv4 addresses that we are listening on
     std.log.info("- http://localhost:{}", .{port});
-    var hostBuffer: [std.os.HOST_NAME_MAX]u8 = undefined;
-    const hostname = try std.os.gethostname(&hostBuffer);
+    var hostBuffer: [std.posix.HOST_NAME_MAX]u8 = undefined;
+    const hostname = try std.posix.gethostname(&hostBuffer);
     std.log.info("- http://{s}:{}", .{ hostname, port });
 
     var addressList = try std.net.getAddressList(allocator, hostname, port);
@@ -124,7 +105,7 @@ fn printValidAddresses(allocator: std.mem.Allocator, port: u16) !void {
     defer uniqueIPv4Addresses.deinit();
 
     for (addressList.addrs) |address| {
-        if (address.any.family == std.os.AF.INET) {
+        if (address.any.family == std.posix.AF.INET) {
             try uniqueIPv4Addresses.put(address.in, true);
         }
     }
