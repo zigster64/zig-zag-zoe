@@ -38,8 +38,10 @@ build-and-launch: docker-build docker-push ecs-service-redeploy
 
 bastille:
 	zig build -Doptimize=ReleaseSmall
-	ls -ltra zig-out/bin/zig-zag-zoe
-	md5 zig-out/bin/zig-zag-zoe
+	bastille cmd zzz killall daemon
 	bastille cp zzz zig-out/bin/zig-zag-zoe /root/bin
+	ls -ltra zig-out/bin/zig-zag-zoe
 	bastille cmd zzz ls -ltra /root/bin/zig-zag-zoe
+	md5 zig-out/bin/zig-zag-zoe
 	bastille cmd zzz md5 /root/bin/zig-zag-zoe
+	bastille cmd zzz daemon -rf /root/bin/zig-zag-zoe
