@@ -74,7 +74,6 @@ pub fn main() !void {
     var router = server.router();
     router.get("/", indexHTML);
     router.get("/index.html", indexHTML);
-    router.get("/htmx.min.js", htmx);
     router.get("/styles.css", stylesCSS);
     router.get("/favicon.ico", favicon);
 
@@ -140,11 +139,6 @@ fn snooze(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
 fn indexHTML(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
     game.log(req, 0);
     res.body = @embedFile("html/index.html");
-}
-
-fn htmx(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
-    game.log(req, 0);
-    res.body = @embedFile("html/htmx.min.js");
 }
 
 fn stylesCSS(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {

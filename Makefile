@@ -8,7 +8,11 @@ clean:
 	rm -rf zig-cache zig-out
 
 run:
+
 	zig build run
+
+watch:
+	find src -name '*.zig' -o -name '*.html' | entr -r zig build -freference-trace run
 
 run-fast:
 	zig build -Doptimize=ReleaseFast run
