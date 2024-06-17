@@ -1,5 +1,5 @@
 .form
-<form hx-post="/setup" hx-ext="json-enc">
+<form hx-post="/setup" hx-ext="json-enc" hx-trigger="click throttle:1s">
     <div>
         <input type="range" id="x" name="x" value="{[x]}" min="2" max="12"
             oninput="document.getElementById('x-value').textContent = this.value">

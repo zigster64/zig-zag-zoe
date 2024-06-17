@@ -8,6 +8,7 @@ const default_port = 3000;
 // change this to .debug if you want extreme debugging
 pub const std_options = std.Options{
     .log_level = .info,
+    // .log_level = .debug,
 };
 
 pub fn usage() void {
@@ -60,7 +61,7 @@ pub fn main() !void {
     const zero_wing: u8 = 0;
 
     var game = try Game.init(grid_x, grid_y, players, win, zero_wing);
-    // try game.startWatcher();
+    try game.startWatcher();
 
     // std.log.debug("Setting pool size to {}", .{Game.MAX_PLAYERS * 4});
     var server = try httpz.ServerCtx(*Game, *Game).init(allocator, .{
@@ -74,7 +75,7 @@ pub fn main() !void {
     var router = server.router();
     router.get("/", indexHTML);
     router.get("/index.html", indexHTML);
-    router.get("/htmx.min.js", htmx);
+    // router.get("/htmx.min.js", htmx);
     router.get("/styles.css", stylesCSS);
     router.get("/favicon.ico", favicon);
 
@@ -142,10 +143,10 @@ fn indexHTML(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
     res.body = @embedFile("html/index.html");
 }
 
-fn htmx(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
-    game.log(req, 0);
-    res.body = @embedFile("html/htmx.min.js");
-}
+// fn htmx(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
+//     game.log(req, 0);
+//     res.body = @embedFile("html/htmx.min.js");
+// }
 
 fn stylesCSS(game: *Game, req: *httpz.Request, res: *httpz.Response) !void {
     game.log(req, 0);

@@ -6,7 +6,7 @@
         </div>
 
         .clickable
-        <div class="{[class]s} player{[player]}" hx-post="/square/{[x]}/{[y]}"
+        <div class="{[class]s} player{[player]}" hx-post="/square/{[x]}/{[y]}" hx-trigger="click throttle:1s"
             hx-headers='js:{{"x-player": getPlayer()}}'>
             {[player]}
         </div>
